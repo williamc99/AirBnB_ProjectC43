@@ -1,0 +1,62 @@
+-Look into Amentities/Listing Types
+-Look into Constraints
+-Update the ER diagram if needed
+-Look into the use of FoOREIGN KEY or REFERENCES
+-Look into UNIQUE keys
+
+
+DROP TABLE IF EXISTS User;
+
+CREATE TABLE User(
+    username varchar(16) PRIMARY KEY NOT NULL,
+    password varchar(16) NOT NULL,
+    firstName varchar(15) NOT NULL,
+    lastName varchar(15) NOT NULL,
+    address varchar(25) NOT NULL,
+    occupation varchar(20),
+    ssn varchar(9),
+    creditCard varchar(16),
+    birthDate date NOT NULL
+);
+
+CREATE TABLE Listing(
+    listingID varchar(16) PRIMARY KEY NOT NULL,
+    hostID varchar(16) NOT NULL,
+    listingType varchar(20) NOT NULL,
+    address varchar(25) NOT NULL,
+    country varchar(16) NOT NULL,
+    city varchar(24) NOT NULL,
+    postalCode varchar(10) NOT NULL,
+    price decimal(6, 2) NOT NULL,
+    longitude decimal(9, 6) NOT NULL,
+    latitude decimal(8, 6) NOT NULL
+);
+
+CREATE TABLE Booking(
+    bookingID varchar(16) PRIMARY KEY NOT NULL,
+    listingID varchar(16) NOT NULL,
+    userID varchar(16) NOT NULL,
+    status varchar(10) NOT NULL,
+    startDate date NOT NULL,
+    endDate date NOT NULL
+);
+
+CREATE TABLE Review(
+    reviewerID varchar(16) NOT NULL,
+    revieweeID varchar(16) NOT NULL,
+    reviewType varchar(7) NOT NULL,
+    comment varchar(400),
+    hostRating int,
+    listingRating int,
+    renterRating int,
+    PRIMARY KEY (reviewerID, revieweeID),
+    // CHECK (hostRating BETWEEN 1 AND 5 AND listingRating BETWEEN 1 AND 5 AND renterRating BETWEEN 1 AND 5)
+);
+
+CREATE TABLE Day(
+    listingID varchar(16) NOT NULL,
+    bookingiD varchar(16),
+    status varchar(10) NOT NULL,
+    date DATE NOT NULL,
+    PRIMARY KEY (listingID, date)
+);

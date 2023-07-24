@@ -97,10 +97,10 @@ public class Main {
         System.out.println("Please enter your occupation");
         String occupation = scanner.nextLine();
 
-        System.out.println("Please enter your SSN");
+        System.out.println("Please enter your SSN (no dashes)");
         String ssn = scanner.nextLine();
 
-        System.out.println("Please enter your credit card number");
+        System.out.println("Please enter your credit card number (no dashes)");
         String creditCard = scanner.nextLine();
 
         System.out.println("Please enter your birth date (YYYY-MM-DD)");
@@ -154,23 +154,26 @@ public class Main {
             // Display the listings
             // Ask the user to select a listing
             // Show the listing info and the available dates
+            // Make sure that the user books one day or a row of days
             // Ask user for information, time, etc.
             // Create a new booking object
             // Push the new booking to the database
-            // Return to main menu
         }
         else if (choice == 2) {
             //Search for a listing using listing ID
             System.out.println("Please enter the listing ID: ");
             String listingID = scanner.nextLine();
             // Show the listing info and the available dates
+            // Make sure that the user books one day or a row of days
             // Ask user for information, time, etc.
             // Create a new booking object
             // Push the new booking to the database
-            // Return to main menu
-            //Heloo
         }
 
+        // Ask if the user wants to book another listing
+        System.out.println("Would you like to book another listing? (Y/N)");
+        String answer = scanner.nextLine();
+        // While loop the entire function
 
         printBackToMainMenu();
     }
@@ -206,6 +209,10 @@ public class Main {
         // Ask user for listing type
         System.out.println("Please enter the listing type: ");
         String listingType = scanner.nextLine();
+
+        // Ask user for address
+        System.out.println("Please enter the address: ");
+        String address = scanner.nextLine();
 
         // Ask user for country
         System.out.println("Please enter the country: ");
