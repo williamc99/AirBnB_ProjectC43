@@ -14,68 +14,72 @@ public class Main {
         Class.forName(dbClassName);
         final String USER = "root";
         final String PASS = "123";
-        //System.out.println("Connecting to database...");
 
         // Declare variables
         Logger logger = Logger.getAnonymousLogger();
         Scanner scanner = new Scanner(System.in);
         boolean exit = false;
 
+        try {
+            // Connect to the database
+            Connection conn = DriverManager.getConnection(CONNECTION, USER, PASS);
 
+            // Start the application
+            System.out.println("\n------------------------------------------------------------");
+            System.out.println("Welcome to the MyBnB application!");
 
-        // Start the application
-        System.out.println("\n------------------------------------------------------------");
-        System.out.println("Welcome to the MyBnB application!");
+            // Display prompts
+            while (!exit) {
+                System.out.println("\n");
+                System.out.println("Please enter the corresponding number to select an option.");
+                System.out.println("1. Create a new user");
+                System.out.println("2. Book a listing");
+                System.out.println("3. Cancel a booking");
+                System.out.println("4. Create a new listing");
+                System.out.println("5. Remove a listing");
+                System.out.println("6. Edit a listing");
+                System.out.println("7. Write a review");
+                System.out.println("8. Reports");
+                System.out.println("0. Exit the application\n");
 
-        // Display prompts
-        while (!exit) {
-            System.out.println("\n");
-            System.out.println("Please enter the corresponding number to select an option.");
-            System.out.println("1. Create a new user");
-            System.out.println("2. Book a listing");
-            System.out.println("3. Cancel a booking");
-            System.out.println("4. Create a new listing");
-            System.out.println("5. Remove a listing");
-            System.out.println("6. Edit a listing");
-            System.out.println("7. Write a review");
-            System.out.println("8. Reports");
-            System.out.println("0. Exit the application\n");
+                // Get user input
+                System.out.print("Enter your choice: ");
+                int choice = scanner.nextInt();
+                scanner.nextLine();
 
-            // Get user input
-            System.out.print("Enter your choice: ");
-            int choice = scanner.nextInt();
-            scanner.nextLine();
-
-            // Make sure that the user input is an integer and is within the range of the menu
-            if (choice < 0 || choice > 8) {
-                System.out.println("Invalid choice. Please try again.");
-                continue;
-            }
-
-            // Handle the user's choice
-            switch (choice) {
-                case 1 -> handleOption1(scanner);
-                case 2 -> handleOption2(scanner);
-                case 3 -> handleOption3(scanner);
-                case 4 -> handleOption4(scanner);
-                case 5 -> handleOption5(scanner);
-                case 6 -> handleOption6(scanner);
-                case 7 -> handleOption7(scanner);
-                case 8 -> handleOption8(scanner);
-                case 0 -> {
-                    System.out.println("Exiting the application...");
-                    exit = true;
+                // Make sure that the user input is an integer and is within the range of the menu
+                if (choice < 0 || choice > 8) {
+                    System.out.println("Invalid choice. Please try again.");
+                    continue;
                 }
-                default -> System.out.println("Invalid choice. Please try again.");
+
+                // Handle the user's choice
+                switch (choice) {
+                    case 1 -> handleOption1(scanner, conn);
+                    case 2 -> handleOption2(scanner, conn);
+                    case 3 -> handleOption3(scanner, conn);
+                    case 4 -> handleOption4(scanner, conn);
+                    case 5 -> handleOption5(scanner, conn);
+                    case 6 -> handleOption6(scanner, conn);
+                    case 7 -> handleOption7(scanner, conn);
+                    case 8 -> handleOption8(scanner, conn);
+                    case 0 -> {
+                        System.out.println("Exiting the application...");
+                        exit = true;
+                    }
+                    default -> System.out.println("Invalid choice. Please try again.");
+                }
             }
+            // Close the scanner
+            scanner.close();
+        } catch (SQLException e) {
+            logger.log(Level.SEVERE, "SQLException: ", e);
         }
-        // Close the scanner
-        scanner.close();
     }
 
 
     // Create a new user
-    private static void handleOption1 (Scanner scanner){
+    private static void handleOption1(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
 
         System.out.println("Please enter a username");
@@ -122,12 +126,12 @@ public class Main {
 
 
     // Book a listing
-    private static void handleOption2 (Scanner scanner){
+    private static void handleOption2(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
 
         int choice;
 
-        while (true){
+        while (true) {
             System.out.println("Would you like to (1) search for a listing or (2) enter a listing ID to book it?");
             System.out.print("Enter your choice (Enter 0 to return to main menu): ");
             choice = scanner.nextInt();
@@ -136,8 +140,7 @@ public class Main {
             // Make sure that the user input is an integer and is within the range of the menu
             if (choice < 0 || choice > 2) {
                 System.out.println("Invalid choice. Please try again.\n");
-            }
-            else{
+            } else {
                 break;
             }
         }
@@ -158,8 +161,7 @@ public class Main {
             // Ask user for information, time, etc.
             // Create a new booking object
             // Push the new booking to the database
-        }
-        else if (choice == 2) {
+        } else if (choice == 2) {
             //Search for a listing using listing ID
             System.out.println("Please enter the listing ID: ");
             String listingID = scanner.nextLine();
@@ -180,7 +182,7 @@ public class Main {
 
 
     // Cancel a booking
-    private static void handleOption3 (Scanner scanner){
+    private static void handleOption3(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
 
 
@@ -197,7 +199,7 @@ public class Main {
 
 
     // Create a new listing
-    private static void handleOption4(Scanner scanner){
+    private static void handleOption4(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
 
 
@@ -261,7 +263,7 @@ public class Main {
 
 
     // Remove a listing
-    private static void handleOption5(Scanner scanner){
+    private static void handleOption5(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
 
 
@@ -285,7 +287,7 @@ public class Main {
     }
 
     // Edit a listing
-    private static void handleOption6(Scanner scanner){
+    private static void handleOption6(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
 
 
@@ -321,7 +323,7 @@ public class Main {
 
 
     // Write a review
-    private static void handleOption7(Scanner scanner){
+    private static void handleOption7(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
 
 
@@ -369,7 +371,7 @@ public class Main {
             // Push the new review to the database
         }
         // If 2, write review for a renter as host
-        else if (choice == 2){
+        else if (choice == 2) {
             // Ask user for username
             System.out.println("Please enter your username: ");
             String username = scanner.nextLine();
@@ -397,7 +399,7 @@ public class Main {
 
 
     // Reports
-    private static void handleOption8(Scanner scanner){
+    private static void handleOption8(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
 
 
@@ -407,11 +409,6 @@ public class Main {
         printBackToMainMenu();
 
     }
-
-
-
-
-
 
 
     // Helper function for printing back to main menu message

@@ -5,8 +5,8 @@ public class Booking {
     String listingID;
     String userID;
     String status;
-    LocalDate startDate;
-    LocalDate endDate;
+    LocalDate startDate;  //might not need
+    LocalDate endDate;    //might not need
 
     public Booking(){
     }

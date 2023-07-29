@@ -4,7 +4,8 @@ public class Day {
     String listingID;
     String bookingID;
     String status;
-    LocalDate date;
+    LocalDate startDate;
+    LocalDate endDate;
 
     public Day(){
     }
