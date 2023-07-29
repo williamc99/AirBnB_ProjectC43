@@ -10,5 +10,5 @@ public class Booking {
 
     public Booking(){
     }
-
+// CHECK (hostRating BETWEEN 1 AND 5 AND listingRating BETWEEN 1 AND 5 AND renterRating BETWEEN 1 AND 5)
 }

@@ -1,29 +1,18 @@
--Look into Amentities/Listing Types
-        -Amentities can be a different table with specific ids
-        -It can be stored for listings by: String amentities = '1,2,3,4....', with each number corresponding to an amentity
-        -When actually displaying the amentities, split the string by comma and query for amentities
--Look into Constraints
--Update the ER diagram if needed
--Look into the use of FOREIGN KEY or REFERENCES
--Look into UNIQUE keys
+DROP TABLE IF EXISTS Users, Listings, Bookings, Reviews, Days, Amenities;
 
--Check that endDate does not come before startDate
-
-DROP TABLE IF EXISTS User;
-
-CREATE TABLE User(
+CREATE TABLE Users(
     username varchar(16) PRIMARY KEY NOT NULL,
     password varchar(16) NOT NULL,
     firstName varchar(15) NOT NULL,
     lastName varchar(15) NOT NULL,
     address varchar(25) NOT NULL,
-    occupation varchar(20),
-    ssn varchar(9),
+    occupation varchar(20) NOT NULL,
+    ssn varchar(9) NOT NULL,
     creditCard varchar(16),
-    birthDate date NOT NULL,
+    birthDate date NOT NULL
 );
 
-CREATE TABLE Listing(
+CREATE TABLE Listings(
     listingID varchar(16) PRIMARY KEY NOT NULL,
     hostID varchar(16) NOT NULL,
     listingType varchar(20) NOT NULL,
@@ -35,21 +24,21 @@ CREATE TABLE Listing(
     longitude decimal(9, 6) NOT NULL,
     latitude decimal(8, 6) NOT NULL,
     amenities varchar(255),
-    FOREIGN KEY (hostID) REFERENCES User(username),
+    FOREIGN KEY (hostID) REFERENCES Users(username)
 );
 
-CREATE TABLE Booking(
+CREATE TABLE Bookings(
     bookingID varchar(16) PRIMARY KEY NOT NULL,
     listingID varchar(16) NOT NULL,
     userID varchar(16) NOT NULL,
     status varchar(10) NOT NULL,
     startDate date NOT NULL,
-    endDate date NOT NULL
-    FOREIGN KEY (listingID) REFERENCES Listing(listingID),
-    FOREIGN KEY (userID) REFERENCES User(username),
+    endDate date NOT NULL,
+    FOREIGN KEY (listingID) REFERENCES Listings(listingID),
+    FOREIGN KEY (userID) REFERENCES Users(username)
 );
 
-CREATE TABLE Review(
+CREATE TABLE Reviews(
     reviewerID varchar(16) NOT NULL,
     revieweeID varchar(16) NOT NULL,
     listingID varchar(16) NOT NULL,
@@ -59,23 +48,26 @@ CREATE TABLE Review(
     listingRating int,
     renterRating int,
     PRIMARY KEY (reviewerID, revieweeID),
-    FOREIGN KEY (reviewerID) REFERENCES User(username),
-    FOREIGN KEY (revieweeID) REFERENCES User(username),
-    FOREIGN KEY (listingID) REFERENCES Listing(listingID),  //LOOK MORE INTO THIS
+    FOREIGN KEY (reviewerID) REFERENCES Users(username),
+    FOREIGN KEY (revieweeID) REFERENCES Users(username),
+    FOREIGN KEY (listingID) REFERENCES Listings(listingID) //LOOK MORE INTO THIS
     // CHECK (hostRating BETWEEN 1 AND 5 AND listingRating BETWEEN 1 AND 5 AND renterRating BETWEEN 1 AND 5)
 );
 
-CREATE TABLE Day(
+CREATE TABLE Days(
+	dayID INT AUTO_INCREMENT,
     listingID varchar(16) NOT NULL,
     bookingiD varchar(16),
     status varchar(10) NOT NULL,
-    date DATE NOT NULL,
-    PRIMARY KEY (listingID, date)
-    FOREIGN KEY (listingID) REFERENCES Listing(listingID),
-    FOREIGN KEY (bookingID) REFERENCES Booking(bookingID),
+    startDate DATE NOT NULL,
+    endDate DATE NOT NULL,
+    PRIMARY KEY (dayID),
+    UNIQUE KEY (listingID, startDate, endDate),
+    FOREIGN KEY (listingID) REFERENCES Listings(listingID),
+    FOREIGN KEY (bookingID) REFERENCES Bookings(bookingID)
 );
 
-CREATE TABLE Amenity(
+CREATE TABLE Amenities(
     amenityID varchar(4) PRIMARY KEY NOT NULL,
     amenityName varchar(20) NOT NULL
 );

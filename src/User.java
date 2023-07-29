@@ -28,16 +28,25 @@ public class User {
         this.birthDate = LocalDate.parse(birthDate);
     }
 
+    public String sqlInsertString(){
+        return "('" + username + "', '" + password + "', '" + firstName + "', '" + lastName + "', '" + address + "', '"
+                + occupation + "', '" + ssn + "', '" + creditCard + "', '" + birthDate + "');";
+    }
 
+    public String validateData(){
+        // If any of the fields are empty, return false
+        if (username.equals("") || password.equals("") || firstName.equals("") || lastName.equals("") || address.equals("")
+                || occupation.equals("") || ssn.equals("")){
+            return "All fields must be filled out, do not leave any fields blank (except credit card).";
+        }
+        // If any of the fields are too long, return false
+        if (username.length() > 16 || password.length() > 16 || firstName.length() > 15 || lastName.length() > 15 || address.length() > 25
+                || occupation.length() > 20 || ssn.length() > 9 || creditCard.length() > 16){
+            return "One or more fields are too long.";
+        }
 
-
-
-
-
-
-
-
-
+        return "pass";
+    }
 
 
 }

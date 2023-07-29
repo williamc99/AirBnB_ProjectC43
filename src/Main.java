@@ -72,6 +72,8 @@ public class Main {
             }
             // Close the scanner
             scanner.close();
+            // Close the connection
+            conn.close();
         } catch (SQLException e) {
             logger.log(Level.SEVERE, "SQLException: ", e);
         }
@@ -79,35 +81,40 @@ public class Main {
 
 
     // Create a new user
-    private static void handleOption1(Scanner scanner, Connection conn) {
+    private static void handleOption1(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
 
-        System.out.println("Please enter a username");
+        System.out.println("Please enter a username (max 16 characters)*: ");
         String username = scanner.nextLine();
         // Check in database to see if username exists
+        if (checkUsernameExists(username, conn)) {
+            System.out.println("Username exists. Please try again.");
+            printBackToMainMenu();
+            return;
+        }
 
-        System.out.println("Please enter a password");
+        System.out.println("Please enter a password (max 16 characters): ");
         String password = scanner.nextLine();
 
-        System.out.println("Please enter your first name");
+        System.out.println("Please enter your first name: ");
         String firstName = scanner.nextLine();
 
-        System.out.println("Please enter your last name");
+        System.out.println("Please enter your last name: ");
         String lastName = scanner.nextLine();
 
-        System.out.println("Please enter your address");
+        System.out.println("Please enter your address: ");
         String address = scanner.nextLine();
 
-        System.out.println("Please enter your occupation");
+        System.out.println("Please enter your occupation: ");
         String occupation = scanner.nextLine();
 
-        System.out.println("Please enter your SSN (no dashes)");
+        System.out.println("Please enter your SSN (no dashes): ");
         String ssn = scanner.nextLine();
 
-        System.out.println("Please enter your credit card number (no dashes)");
+        System.out.println("Please enter your credit card number (no dashes) [optional]: ");
         String creditCard = scanner.nextLine();
 
-        System.out.println("Please enter your birth date (YYYY-MM-DD)");
+        System.out.println("Please enter your birth date (YYYY-MM-DD): ");
         String birthDate = scanner.nextLine();
         // Make sure that user is at least 18 years old
         if (LocalDate.parse(birthDate).isAfter(LocalDate.now().minusYears(18))) {
@@ -118,9 +125,19 @@ public class Main {
 
         // Create a new user object
         User newUser = new User(username, password, firstName, lastName, address, occupation, ssn, creditCard, birthDate);
+        // Do one final check to make sure that all fields are valid
+        String validation = newUser.validateData();
+        if (!validation.equals("pass")) {
+            System.out.println(validation);
+            printBackToMainMenu();
+            return;
+        }
         //Push the new user to the database
-        System.out.println("New user " + newUser.username + " created successfully!");
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Users VALUES " + newUser.sqlInsertString());
+        stmt.execute();
+        System.out.println("New user '" + newUser.username + "' created successfully!");
 
+        stmt.close();
         printBackToMainMenu();
     }
 
@@ -128,7 +145,6 @@ public class Main {
     // Book a listing
     private static void handleOption2(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
-
         int choice;
 
         while (true) {
@@ -158,6 +174,8 @@ public class Main {
             // Ask the user to select a listing
             // Show the listing info and the available dates
             // Make sure that the user books one day or a row of days
+            // Ask user for username and make sure they have a credit card on file
+                // If not, ask them to enter a credit card and update in database
             // Ask user for information, time, etc.
             // Create a new booking object
             // Push the new booking to the database
@@ -167,6 +185,8 @@ public class Main {
             String listingID = scanner.nextLine();
             // Show the listing info and the available dates
             // Make sure that the user books one day or a row of days
+            // Ask user for username and make sure they have a credit card on file
+                // If not, ask them to enter a credit card and update in database
             // Ask user for information, time, etc.
             // Create a new booking object
             // Push the new booking to the database
@@ -199,14 +219,14 @@ public class Main {
 
 
     // Create a new listing
-    private static void handleOption4(Scanner scanner, Connection conn) {
+    private static void handleOption4(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
 
 
         // Ask user for username
-        System.out.println("Please enter your username: ");
+        System.out.println("Please enter a username (max 16 characters) : ");
         String username = scanner.nextLine();
-        // Check if username exists in the database
+        // Check in database to see if username exists
 
         // Ask user for listing type
         System.out.println("Please enter the listing type: ");
@@ -408,6 +428,22 @@ public class Main {
 
         printBackToMainMenu();
 
+    }
+
+    private static boolean checkUsernameExists(String username, Connection conn) throws SQLException {
+        // Check in database to see if username exists
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Users WHERE username = ?");
+        stmt.setString(1, username);
+        ResultSet rs = stmt.executeQuery();
+
+        if (rs.next()) {
+            rs.close();
+            stmt.close();
+            return true;
+        }
+        rs.close();
+        stmt.close();
+        return false;
     }
 
 
