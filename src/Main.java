@@ -227,9 +227,25 @@ public class Main {
         System.out.println("Please enter a username (max 16 characters) : ");
         String username = scanner.nextLine();
         // Check in database to see if username exists
+        if (!checkUsernameExists(username, conn)) {
+            System.out.println("Username does not exist. Please try again.");
+            printBackToMainMenu();
+            return;
+        }
+
+        // Ask user for password
+        System.out.println("Please enter your password: ");
+        String password = scanner.nextLine();
+        // Check to see if password matches with username
+        if (!verifyLogin(username, password, conn)) {
+            System.out.println("Password does not match. Please try again.");
+            printBackToMainMenu();
+            return;
+        }
 
         // Ask user for listing type
         System.out.println("Please enter the listing type: ");
+        System.out.println("(The valid listing types are: 'House', 'Apartment', 'Guesthouse', and 'Hotel')");
         String listingType = scanner.nextLine();
 
         // Ask user for address
@@ -245,37 +261,63 @@ public class Main {
         String city = scanner.nextLine();
 
         // Ask user for postal code
-        System.out.println("Please enter the postal code: ");
+        System.out.println("Please enter the postal code (ex. A1A 1A1): ");
         String postalCode = scanner.nextLine();
 
         // Ask user for longitude
-        System.out.println("Please enter the longitude: ");
+        System.out.println("Please enter the longitude (up to 6 decimal places): ");
         float longitude = scanner.nextFloat();
 
         // Ask user for latitude
-        System.out.println("Please enter the latitude: ");
+        System.out.println("Please enter the latitude (up to 6 decimal places): ");
         float latitude = scanner.nextFloat();
+
+        //Ask user for amenities
+        int amenityCount = 0;
+        String amenities = recordAmenities(scanner, conn);
+
+        // Create a new listing object
+        Listing newListing = new Listing(username, listingType, address, country, city, postalCode, 0,longitude, latitude, amenities);
 
         // Ask user for price
         // Run the function to estimate a price
-        System.out.println("Based on the inputted information, we recommend this price: ");
+        System.out.println("Based on the inputted information, we recommend this price: " + newListing.estimatePrice());
         System.out.println("Please enter your desired price per night: ");
         float price = scanner.nextFloat();
 
-        // Create a new listing object
+        // Push the new listing to the database
+        String validation = newListing.validateData();
+        if (!validation.equals("pass")) {
+            System.out.println(validation);
+            printBackToMainMenu();
+            return;
+        }
+        //Push the new listing to the database
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Listings VALUES " + newListing.sqlInsertString());
+        stmt.execute();
+
+        // Get the auto generated listing ID from database
+        int listingID = getListingId(username, listingType, address, country, city, postalCode, price, longitude, latitude, amenities, conn);
+        newListing.setListingID(listingID);
+
+        System.out.println("New listing with ID: '" + newListing.listingID + "' created successfully!\n");
+
+        stmt.close();
 
 
         // Ask the user for dates
         System.out.println("Please enter the availability dates for your listing");
-        System.out.println("Do you want to (1) enter a time range or (2) enter specific dates?");
-        System.out.print("Enter your choice: ");
-        int choice = scanner.nextInt();
-        scanner.nextLine();
+        System.out.println("Note that you must provide a time range, and must be a minimum of 1 night.");
+        System.out.print("Enter the start date (YYYY-MM-DD): ");
+        String startDate = scanner.nextLine();
+        System.out.print("Enter the end date (YYYY-MM-DD): ");
+        String endDate = scanner.nextLine();
 
-        // If 1, ask for start date and end date
-        // If 2, repeatedly ask for dates until the user enters 0
+        // TODO: Create the new Day object, create validate functions for them, figure out String to LocalDate,
+        // TODO: Figure out LocalDate to SQL Date, push the Day to the database
+        // TODO: Ask the user if they would like to add more availability dates
 
-        // Add the Days to the database with the associated listing ID
+
 
         // Return to main menu
         printBackToMainMenu();
@@ -446,6 +488,86 @@ public class Main {
         return false;
     }
 
+    private static boolean verifyLogin(String username, String password, Connection conn) throws SQLException{
+        // Check to see if password matches with username
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Users WHERE username = ? AND password = ?;");
+        stmt.setString(1, username);
+        stmt.setString(2, password);
+        ResultSet rs = stmt.executeQuery();
+
+        // If the username and password match, return true
+        if (rs.next()) {
+            rs.close();
+            stmt.close();
+            return true;
+        }
+
+        rs.close();
+        stmt.close();
+        return false;
+    }
+
+    public static String recordAmenities(Scanner scanner, Connection conn) throws SQLException {
+        boolean exit = false;
+        String amenities = "";
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Amenities WHERE amenity = ?;");
+
+        while (!exit){
+            System.out.println("Please enter the name of an amenity to include in your listing: ");
+            String amenity = scanner.nextLine();
+
+            // Check if amenity exists in the database
+            stmt.setString(1, amenity);
+            ResultSet rs = stmt.executeQuery();
+
+            // If the amenity exists, concat the id to the string
+            if (rs.next()){
+                String amenityID = rs.getString("amenityID");
+                //Concat amenityID and a comma to the string
+                amenities = amenities.concat(amenityID + ",");
+                System.out.println("Amenity " + amenity + " added successfully!");
+            }
+            else {
+                System.out.println("Amenity does not exist. Please try again.");
+                continue;
+            }
+
+            // Ask if the user wants to add another amenity
+            System.out.println("Would you like to add another amenity? (y/n)");
+            String answer = scanner.nextLine();
+
+            if (answer.equals("n")){
+                exit = true;
+            }
+        }
+        stmt.close();
+
+        return amenities;
+    }
+
+    private static int getListingId(String username, String listingType, String address, String country, String city, String postalCode, float price, float longitude, float latitude, String amenities, Connection conn) throws SQLException{
+        int listingID = 0;
+
+        PreparedStatement stmt = conn.prepareStatement("SELECT listingID FROM Listings WHERE hostID = ? AND listingType = ? AND address = ? AND country = ? AND city = ? AND postalCode = ? AND price = ? AND longitude = ? AND latitude = ? AND amenities = ?;");
+        stmt.setString(1, username);
+        stmt.setString(2, listingType);
+        stmt.setString(3, address);
+        stmt.setString(4, country);
+        stmt.setString(5, city);
+        stmt.setString(6, postalCode);
+        stmt.setFloat(7, price);
+        stmt.setFloat(8, longitude);
+        stmt.setFloat(9, latitude);
+        stmt.setString(10, amenities);
+
+        ResultSet rs = stmt.executeQuery();
+        rs.next();
+        listingID = rs.getInt("listingID");
+
+        rs.close();
+        stmt.close();
+        return listingID;
+    }
 
     // Helper function for printing back to main menu message
     private static void printBackToMainMenu() {

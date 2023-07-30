@@ -13,7 +13,7 @@ CREATE TABLE Users(
 );
 
 CREATE TABLE Listings(
-    listingID varchar(16) PRIMARY KEY NOT NULL,
+    listingID int NOT NULL AUTO_INCREMENT,
     hostID varchar(16) NOT NULL,
     listingType varchar(20) NOT NULL,
     address varchar(25) NOT NULL,
@@ -24,12 +24,13 @@ CREATE TABLE Listings(
     longitude decimal(9, 6) NOT NULL,
     latitude decimal(8, 6) NOT NULL,
     amenities varchar(255),
+    PRIMARY KEY (listingID),
     FOREIGN KEY (hostID) REFERENCES Users(username)
 );
 
 CREATE TABLE Bookings(
     bookingID varchar(16) PRIMARY KEY NOT NULL,
-    listingID varchar(16) NOT NULL,
+    listingID int NOT NULL,
     userID varchar(16) NOT NULL,
     status varchar(10) NOT NULL,
     startDate date NOT NULL,
@@ -41,7 +42,7 @@ CREATE TABLE Bookings(
 CREATE TABLE Reviews(
     reviewerID varchar(16) NOT NULL,
     revieweeID varchar(16) NOT NULL,
-    listingID varchar(16) NOT NULL,
+    listingID int NOT NULL,
     reviewType varchar(7) NOT NULL,
     comment varchar(400),
     hostRating int,
@@ -56,7 +57,7 @@ CREATE TABLE Reviews(
 
 CREATE TABLE Days(
 	dayID INT AUTO_INCREMENT,
-    listingID varchar(16) NOT NULL,
+    listingID int NOT NULL,
     bookingiD varchar(16),
     status varchar(10) NOT NULL,
     startDate DATE NOT NULL,
@@ -71,3 +72,5 @@ CREATE TABLE Amenities(
     amenityID varchar(4) PRIMARY KEY NOT NULL,
     amenityName varchar(20) NOT NULL
 );
+
+INSERT into Users VALUES ('swaawilliam', '123', 'William', 'Slicer', '123 Street', 'Student', '123456789', 'creditCardnum', '1992-02-13');
