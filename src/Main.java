@@ -134,6 +134,7 @@ public class Main {
         }
         //Push the new user to the database
         PreparedStatement stmt = conn.prepareStatement("INSERT INTO Users VALUES " + newUser.sqlInsertString());
+        stmt.setDate(1, Date.valueOf(newUser.getBirthDate()));
         stmt.execute();
         System.out.println("New user '" + newUser.username + "' created successfully!");
 
@@ -166,8 +167,10 @@ public class Main {
             //Search for a listing using location
             System.out.println("Please enter the longitude: ");
             float longitude = scanner.nextFloat();
+            scanner.nextLine();
             System.out.println("Please enter the latitude: ");
             float latitude = scanner.nextFloat();
+            scanner.nextLine();
 
             // Send information to the database to search for listings
             // Display the listings
@@ -175,7 +178,7 @@ public class Main {
             // Show the listing info and the available dates
             // Make sure that the user books one day or a row of days
             // Ask user for username and make sure they have a credit card on file
-                // If not, ask them to enter a credit card and update in database
+            // If not, ask them to enter a credit card and update in database
             // Ask user for information, time, etc.
             // Create a new booking object
             // Push the new booking to the database
@@ -186,7 +189,7 @@ public class Main {
             // Show the listing info and the available dates
             // Make sure that the user books one day or a row of days
             // Ask user for username and make sure they have a credit card on file
-                // If not, ask them to enter a credit card and update in database
+            // If not, ask them to enter a credit card and update in database
             // Ask user for information, time, etc.
             // Create a new booking object
             // Push the new booking to the database
@@ -267,23 +270,27 @@ public class Main {
         // Ask user for longitude
         System.out.println("Please enter the longitude (up to 6 decimal places): ");
         float longitude = scanner.nextFloat();
+        scanner.nextLine();
 
         // Ask user for latitude
         System.out.println("Please enter the latitude (up to 6 decimal places): ");
         float latitude = scanner.nextFloat();
+        scanner.nextLine();
 
         //Ask user for amenities
-        int amenityCount = 0;
         String amenities = recordAmenities(scanner, conn);
 
         // Create a new listing object
-        Listing newListing = new Listing(username, listingType, address, country, city, postalCode, 0,longitude, latitude, amenities);
+        Listing newListing = new Listing(username, listingType, address, country, city, postalCode, 0, longitude, latitude, amenities);
 
         // Ask user for price
         // Run the function to estimate a price
-        System.out.println("Based on the inputted information, we recommend this price: " + newListing.estimatePrice());
+        System.out.println("Based on the inputted information, we recommend this price: $" + newListing.estimatePrice());
         System.out.println("Please enter your desired price per night: ");
         float price = scanner.nextFloat();
+        scanner.nextLine();
+
+        newListing.setPrice(price);
 
         // Push the new listing to the database
         String validation = newListing.validateData();
@@ -293,31 +300,69 @@ public class Main {
             return;
         }
         //Push the new listing to the database
-        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Listings VALUES " + newListing.sqlInsertString());
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Listings VALUES(default, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ");
+        stmt.setString(1, newListing.hostID);
+        stmt.setString(2, newListing.listingType);
+        stmt.setString(3, newListing.address);
+        stmt.setString(4, newListing.country);
+        stmt.setString(5, newListing.city);
+        stmt.setString(6, newListing.postalCode);
+        stmt.setFloat(7, newListing.price);
+        stmt.setFloat(8, newListing.longitude);
+        stmt.setFloat(9, newListing.latitude);
+        stmt.setString(10, newListing.amenities);
         stmt.execute();
 
         // Get the auto generated listing ID from database
         int listingID = getListingId(username, listingType, address, country, city, postalCode, price, longitude, latitude, amenities, conn);
         newListing.setListingID(listingID);
-
         System.out.println("New listing with ID: '" + newListing.listingID + "' created successfully!\n");
 
-        stmt.close();
-
-
         // Ask the user for dates
-        System.out.println("Please enter the availability dates for your listing");
-        System.out.println("Note that you must provide a time range, and must be a minimum of 1 night.");
-        System.out.print("Enter the start date (YYYY-MM-DD): ");
-        String startDate = scanner.nextLine();
-        System.out.print("Enter the end date (YYYY-MM-DD): ");
-        String endDate = scanner.nextLine();
+        boolean exit = false;
+        while (!exit) {
+            System.out.println("Please enter the availability dates for your listing");
+            System.out.println("Note that you must provide a time range, and must be a minimum of 1 night.");
+            System.out.print("Enter the start date (YYYY-MM-DD): ");
+            String startDate = scanner.nextLine();
+            System.out.print("Enter the end date (YYYY-MM-DD): ");
+            String endDate = scanner.nextLine();
 
-        // TODO: Create the new Day object, create validate functions for them, figure out String to LocalDate,
-        // TODO: Figure out LocalDate to SQL Date, push the Day to the database
-        // TODO: Ask the user if they would like to add more availability dates
+            //TODO: Test this function
 
+            if (checkOverlap(LocalDate.parse(startDate), LocalDate.parse(endDate), listingID, conn)) {
+                System.out.println("The dates you entered are already booked. Please try again.");
+                continue;
+            }
 
+            Day newDay = new Day(listingID, "available", startDate, endDate);
+            validation = newDay.validateData();
+            if (!validation.equals("pass")) {
+                System.out.println(validation);
+                printBackToMainMenu();
+                return;
+            }
+
+            //Push the new day to the database
+            stmt = conn.prepareStatement("INSERT INTO Days VALUES(default,?,NULL,?,?,?)");
+            stmt.setInt(1, newDay.listingID);
+            stmt.setString(2, newDay.status);
+            stmt.setDate(3, Date.valueOf(newDay.startDate));
+            stmt.setDate(4, Date.valueOf(newDay.endDate));
+            stmt.execute();
+
+            System.out.println("New availability for listing with ID: '" + newDay.listingID + "' with start date: '"
+                    + newDay.startDate.toString() + "' and end date: '" + newDay.endDate.toString()
+                    + "' created successfully!\n");
+
+            System.out.println("Would you like to add another availability? (y/n): ");
+            String answer = scanner.nextLine();
+            if (answer.equals("n")) {
+                exit = true;
+            }
+            System.out.println("\n");
+        }
+        stmt.close();
 
         // Return to main menu
         printBackToMainMenu();
@@ -488,7 +533,7 @@ public class Main {
         return false;
     }
 
-    private static boolean verifyLogin(String username, String password, Connection conn) throws SQLException{
+    private static boolean verifyLogin(String username, String password, Connection conn) throws SQLException {
         // Check to see if password matches with username
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Users WHERE username = ? AND password = ?;");
         stmt.setString(1, username);
@@ -510,9 +555,9 @@ public class Main {
     public static String recordAmenities(Scanner scanner, Connection conn) throws SQLException {
         boolean exit = false;
         String amenities = "";
-        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Amenities WHERE amenity = ?;");
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Amenities WHERE amenityName = ?;");
 
-        while (!exit){
+        while (!exit) {
             System.out.println("Please enter the name of an amenity to include in your listing: ");
             String amenity = scanner.nextLine();
 
@@ -521,13 +566,12 @@ public class Main {
             ResultSet rs = stmt.executeQuery();
 
             // If the amenity exists, concat the id to the string
-            if (rs.next()){
+            if (rs.next()) {
                 String amenityID = rs.getString("amenityID");
                 //Concat amenityID and a comma to the string
                 amenities = amenities.concat(amenityID + ",");
                 System.out.println("Amenity " + amenity + " added successfully!");
-            }
-            else {
+            } else {
                 System.out.println("Amenity does not exist. Please try again.");
                 continue;
             }
@@ -536,7 +580,7 @@ public class Main {
             System.out.println("Would you like to add another amenity? (y/n)");
             String answer = scanner.nextLine();
 
-            if (answer.equals("n")){
+            if (answer.equals("n")) {
                 exit = true;
             }
         }
@@ -545,7 +589,7 @@ public class Main {
         return amenities;
     }
 
-    private static int getListingId(String username, String listingType, String address, String country, String city, String postalCode, float price, float longitude, float latitude, String amenities, Connection conn) throws SQLException{
+    private static int getListingId(String username, String listingType, String address, String country, String city, String postalCode, float price, float longitude, float latitude, String amenities, Connection conn) throws SQLException {
         int listingID = 0;
 
         PreparedStatement stmt = conn.prepareStatement("SELECT listingID FROM Listings WHERE hostID = ? AND listingType = ? AND address = ? AND country = ? AND city = ? AND postalCode = ? AND price = ? AND longitude = ? AND latitude = ? AND amenities = ?;");
@@ -567,6 +611,29 @@ public class Main {
         rs.close();
         stmt.close();
         return listingID;
+    }
+
+    public static boolean checkOverlap(LocalDate startDate, LocalDate endDate, int listingID, Connection conn){
+        // Given a start date and end date, check if there are any bookings that overlap with the given dates
+        try {
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Days WHERE listingID = ? AND status = 'available' AND startDate <= ? AND endDate >= ?;");
+            stmt.setInt(1, listingID);
+            stmt.setDate(2, Date.valueOf(startDate));
+            stmt.setDate(3, Date.valueOf(endDate));
+            ResultSet rs = stmt.executeQuery();
+
+            // If there is a booking that overlaps, return true
+            if (rs.next()) {
+                rs.close();
+                stmt.close();
+                return true;
+            }
+            rs.close();
+            stmt.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     // Helper function for printing back to main menu message

@@ -30,7 +30,7 @@ public class User {
 
     public String sqlInsertString(){
         return "('" + username + "', '" + password + "', '" + firstName + "', '" + lastName + "', '" + address + "', '"
-                + occupation + "', '" + ssn + "', '" + creditCard + "', '" + birthDate + "');";
+                + occupation + "', '" + ssn + "', '" + creditCard + "', ?);";
     }
 
     public String validateData(){
@@ -46,6 +46,10 @@ public class User {
         }
 
         return "pass";
+    }
+
+    public LocalDate getBirthDate() {
+        return birthDate;
     }
 
 

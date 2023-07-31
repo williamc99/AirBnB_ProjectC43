@@ -46,6 +46,10 @@ public class Listing {
                 || postalCode.length() > 10 || amenities.length() > 255){
             return "One or more fields are too long.";
         }
+        // If the price is negative, return false
+        if (price < 0){
+            return "Price cannot be negative.";
+        }
 
         return "pass";
     }
@@ -73,6 +77,10 @@ public class Listing {
 
     public void setListingID(int listingID) {
         this.listingID = listingID;
+    }
+
+    public void setPrice(float price) {
+        this.price = price;
     }
 
 }

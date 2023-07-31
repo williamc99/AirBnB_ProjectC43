@@ -29,12 +29,13 @@ CREATE TABLE Listings(
 );
 
 CREATE TABLE Bookings(
-    bookingID varchar(16) PRIMARY KEY NOT NULL,
+    bookingID int NOT NULL AUTO_INCREMENT,
     listingID int NOT NULL,
     userID varchar(16) NOT NULL,
     status varchar(10) NOT NULL,
     startDate date NOT NULL,
     endDate date NOT NULL,
+    PRIMARY KEY (bookingID),
     FOREIGN KEY (listingID) REFERENCES Listings(listingID),
     FOREIGN KEY (userID) REFERENCES Users(username)
 );
@@ -51,14 +52,13 @@ CREATE TABLE Reviews(
     PRIMARY KEY (reviewerID, revieweeID),
     FOREIGN KEY (reviewerID) REFERENCES Users(username),
     FOREIGN KEY (revieweeID) REFERENCES Users(username),
-    FOREIGN KEY (listingID) REFERENCES Listings(listingID) //LOOK MORE INTO THIS
-    // CHECK (hostRating BETWEEN 1 AND 5 AND listingRating BETWEEN 1 AND 5 AND renterRating BETWEEN 1 AND 5)
+    FOREIGN KEY (listingID) REFERENCES Listings(listingID)
 );
 
 CREATE TABLE Days(
 	dayID INT AUTO_INCREMENT,
     listingID int NOT NULL,
-    bookingiD varchar(16),
+    bookingiD int,
     status varchar(10) NOT NULL,
     startDate DATE NOT NULL,
     endDate DATE NOT NULL,
@@ -74,3 +74,6 @@ CREATE TABLE Amenities(
 );
 
 INSERT into Users VALUES ('swaawilliam', '123', 'William', 'Slicer', '123 Street', 'Student', '123456789', 'creditCardnum', '1992-02-13');
+INSERT into Listings VALUES (default, 'swaawilliam', 'House', '100 Addy', 'Canada', 'Toronto', 'M1P 2S2', 400.00, 23.000000, 42.000000, "1,");
+INSERT into Amenities VALUES (1, 'Pool');
+INSERT into Days VALUES (default, 4, NULL, 'available', 2022-12-13, 2022-12-26);
