@@ -1,5 +1,7 @@
 import java.sql.*;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.Scanner;
@@ -148,40 +150,55 @@ public class Main {
         System.out.println("\n\n");
         int choice;
 
+        //TODO: Read the 'Queries to Support' section to see how to implement this function
+        // - Longitude/Latitude Search
+        // - Search by Postal Code
+        // - Search by exact address
+        // --- Searching with temporal filter (i.e date range)
+        // --- Searching with amenities, time, and price filters
+
         while (true) {
-            System.out.println("Would you like to (1) search for a listing or (2) enter a listing ID to book it?");
+            System.out.println("Would you like to: ");
+            System.out.println("(1) Search for a listing using longitude/latitude");
+            System.out.println("(2) Search for a listing using postal code");
+            System.out.println("(3) Search for a listing using exact address");
             System.out.print("Enter your choice (Enter 0 to return to main menu): ");
             choice = scanner.nextInt();
             scanner.nextLine();
 
             // Make sure that the user input is an integer and is within the range of the menu
-            if (choice < 0 || choice > 2) {
+            if (choice < 0 || choice > 3) {
                 System.out.println("Invalid choice. Please try again.\n");
-            } else {
+            }
+            else if (choice == 0){
+                printBackToMainMenu();
+                return;
+            }
+            else {
                 break;
             }
+
         }
 
-        // Handle the user's choice
-        if (choice == 1) {
-            //Search for a listing using location
-            System.out.println("Please enter the longitude: ");
-            float longitude = scanner.nextFloat();
-            scanner.nextLine();
-            System.out.println("Please enter the latitude: ");
-            float latitude = scanner.nextFloat();
-            scanner.nextLine();
+        // Ask user for longitude/latitude
+        System.out.println("Please enter the longitude: ");
+        float longitude = scanner.nextFloat();
+        scanner.nextLine();
+        System.out.println("Please enter the latitude: ");
+        float latitude = scanner.nextFloat();
+        scanner.nextLine();
 
-            // Send information to the database to search for listings
-            // Display the listings
-            // Ask the user to select a listing
-            // Show the listing info and the available dates
-            // Make sure that the user books one day or a row of days
-            // Ask user for username and make sure they have a credit card on file
-            // If not, ask them to enter a credit card and update in database
-            // Ask user for information, time, etc.
-            // Create a new booking object
-            // Push the new booking to the database
+
+        // Searching using longitude/latitude
+        if (choice == 1) {
+            // Get
+
+
+
+
+
+
+
         } else if (choice == 2) {
             //Search for a listing using listing ID
             System.out.println("Please enter the listing ID: ");
@@ -194,6 +211,16 @@ public class Main {
             // Create a new booking object
             // Push the new booking to the database
         }
+
+
+
+        // Show the listing info and the available dates
+        // Make sure that the user books one day or a row of days
+        // Ask user for username and make sure they have a credit card on file
+        // If not, ask them to enter a credit card and update in database
+        // Ask user for information, time, etc.
+        // Create a new booking object
+        // Push the new booking to the database
 
         // Ask if the user wants to book another listing
         System.out.println("Would you like to book another listing? (Y/N)");
@@ -328,10 +355,8 @@ public class Main {
             System.out.print("Enter the end date (YYYY-MM-DD): ");
             String endDate = scanner.nextLine();
 
-            //TODO: Test this function
-
             if (checkOverlap(LocalDate.parse(startDate), LocalDate.parse(endDate), listingID, conn)) {
-                System.out.println("The dates you entered are already booked. Please try again.");
+                System.out.println("\nThe dates you entered are not available. Please try again.");
                 continue;
             }
 
@@ -415,8 +440,9 @@ public class Main {
         scanner.nextLine();
 
         // If 1, ask for when you want the price change to take effect
-        // Make sure that the date entered is not already booked
         // Ask for the new price
+        // Ask for when you want this price to take effect
+        // Make sure that the date entered is not already booked
         // Update the price in the database
 
         // If 2, ask for when you want the availability change to take effect
@@ -615,11 +641,15 @@ public class Main {
 
     public static boolean checkOverlap(LocalDate startDate, LocalDate endDate, int listingID, Connection conn){
         // Given a start date and end date, check if there are any bookings that overlap with the given dates
+
+        //TODO: Maybe change this so that it shows and checks for listings that are either booked or available
+        //TODO: Can use the WHERE NOT 'cancelled' 
+
         try {
             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Days WHERE listingID = ? AND status = 'available' AND startDate <= ? AND endDate >= ?;");
             stmt.setInt(1, listingID);
-            stmt.setDate(2, Date.valueOf(startDate));
-            stmt.setDate(3, Date.valueOf(endDate));
+            stmt.setDate(2, Date.valueOf(endDate));
+            stmt.setDate(3, Date.valueOf(startDate));
             ResultSet rs = stmt.executeQuery();
 
             // If there is a booking that overlaps, return true
@@ -634,6 +664,51 @@ public class Main {
             e.printStackTrace();
         }
         return false;
+    }
+
+    private static float checkWithinRadius(float startLongitude, float startLatitude, float targetLongitude,
+                                             float targetLatitude, int radius) {
+        // Given two longitude/latitude pairs, check if the target is within the radius of the start
+        double AVERAGE_RADIUS_OF_EARTH = 6371;
+        double latDistance = Math.toRadians(startLatitude - targetLatitude);
+        double lngDistance = Math.toRadians(startLongitude - targetLongitude);
+
+        double a = (Math.sin(latDistance / 2) * Math.sin(latDistance / 2)) +
+                (Math.cos(Math.toRadians(startLatitude))) *
+                        (Math.cos(Math.toRadians(targetLatitude))) *
+                        (Math.sin(lngDistance / 2)) *
+                        (Math.sin(lngDistance / 2));
+
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        float distance = (float) (AVERAGE_RADIUS_OF_EARTH * c);
+
+        if (distance > radius){
+            return -1;
+        }
+
+        return distance;
+    }
+
+    private static void sortDistancePairArray(DistancePair[] arr){
+        Comparator<DistancePair> comparator = new Comparator<>() {
+            @Override
+            public int compare(DistancePair p1, DistancePair p2) {
+                return Double.compare(p1.distance, p2.distance);
+            }
+        };
+        Arrays.sort(arr, comparator);
+    }
+
+    private static void displayListingWithDistance(Listing listing, double distance) {
+        System.out.println("Listing ID: " + listing.listingID);
+        System.out.println("Listing Type: " + listing.listingType);
+        System.out.println("Address: " + listing.address);
+        System.out.println(listing.city + ", " + listing.country);
+        System.out.println("Postal Code: " + listing.postalCode);
+        System.out.println("Host ID: " + listing.hostID);
+        System.out.println("Distance from you: " + distance + "\n");
+        System.out.println("Price: " + listing.price);
     }
 
     // Helper function for printing back to main menu message

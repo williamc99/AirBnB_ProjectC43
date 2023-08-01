@@ -75,6 +75,7 @@ public class Listing {
         return price;
     }
 
+
     public void setListingID(int listingID) {
         this.listingID = listingID;
     }
