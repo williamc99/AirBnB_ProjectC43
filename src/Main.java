@@ -40,7 +40,8 @@ public class Main {
                 System.out.println("5. Remove a listing");
                 System.out.println("6. Edit a listing");
                 System.out.println("7. Write a review");
-                System.out.println("8. Reports");
+                System.out.println("8. Delete a user");
+                System.out.println("9. Reports");
                 System.out.println("0. Exit the application\n");
 
                 // Get user input
@@ -64,6 +65,7 @@ public class Main {
                     case 6 -> handleOption6(scanner, conn);
                     case 7 -> handleOption7(scanner, conn);
                     case 8 -> handleOption8(scanner, conn);
+                    case 9 -> handleOption9(scanner, conn);
                     case 0 -> {
                         System.out.println("Exiting the application...");
                         exit = true;
@@ -153,8 +155,13 @@ public class Main {
         // - Longitude/Latitude Search
         // - Search by Postal Code
         // - Search by exact address
-        // --- Searching with temporal filter (i.e date range)
+        // - Searching with temporal filter (i.e date range)
         // --- Searching with amenities, time, and price filters
+
+        //TODO: Use SQL queries to implement these queries instead of Java
+        //TODO: Sort the listings by price ascending or descending
+        // For amenities: SELECT * FROM Listings WHERE amenities LIKE '%10%';
+        // or SELECT * FROM Listings WHERE CONCAT(',', amenities, ',') LIKE '%,10,%';
 
         while (true) {
             System.out.println("Would you like to: ");
@@ -166,7 +173,7 @@ public class Main {
             scanner.nextLine();
 
             // Make sure that the user input is an integer and is within the range of the menu
-            if (choice < 0 || choice > 3) {
+            if (choice < 0 || choice > 4) {
                 System.out.println("Invalid choice. Please try again.\n");
             } else if (choice == 0){
                 printBackToMainMenu();
@@ -176,8 +183,12 @@ public class Main {
             }
         }
 
+        //TODO: Use a single declaration of ArrayList<Listing> that can be used for all queries
+
         // Longitude/Latitude Search
         if (choice == 1){
+            //TODO: Look at Discord for the Haversine Distance query
+
             // Ask user for longitude/latitude
             System.out.println("Please enter the longitude (up to 6 decimal places): ");
             float longitude = scanner.nextFloat();
@@ -246,6 +257,42 @@ public class Main {
             rs.close();
             stmt.close();
         }
+        // Search by postal code
+        else if (choice == 2){
+            System.out.println("Choice 2");
+        }
+        // Search by exact address
+        else if (choice == 3){
+            // Ask user for address
+            System.out.println("Please enter the EXACT address: ");
+            String address = scanner.nextLine();
+
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Listings WHERE address = ?;");
+            stmt.setString(1, address);
+            ResultSet rs = stmt.executeQuery();
+
+            // If list is empty, print error message
+            if (!rs.next()){
+                System.out.println("No listings found with the address '" + address + "'.");
+                printBackToMainMenu();
+                return;
+            }
+
+            while (rs.next()){
+                // Do something
+            }
+        }
+        // Search by temporal filter
+        else {
+            System.out.println("Choice 4");
+        }
+
+
+
+
+
+
+        // Choosing and booking a listing
 
         System.out.println("Enter the listing ID of the listing you would like to book: ");
         int chosenID = scanner.nextInt();
@@ -261,7 +308,7 @@ public class Main {
         }
 
         // Check if user has a credit card on file
-
+        checkCreditCard(scanner, conn, username);
 
 
         // Make sure that the user books one day or a row of days
@@ -567,8 +614,8 @@ public class Main {
     }
 
 
-    // Reports
-    private static void handleOption8(Scanner scanner, Connection conn) {
+    // Delete a user
+    private static void handleOption8(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
 
 //        List<DistancePair> distancePairs = new ArrayList<>();
@@ -602,6 +649,12 @@ public class Main {
 
         printBackToMainMenu();
 
+    }
+
+    // Reports
+    private static void handleOption9(Scanner scanner, Connection conn) {
+        System.out.println("\n\n");
+        printBackToMainMenu();
     }
 
     private static boolean checkUsernameExists(String username, Connection conn) throws SQLException {
@@ -807,6 +860,31 @@ public class Main {
         stmt.close();
 
         return amenities;
+    }
+
+    private static void checkCreditCard(Scanner scanner, Connection conn, String username) throws SQLException {
+        // Get user from database
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Users WHERE username = ?;");
+        stmt.setString(1, username);
+        ResultSet rs = stmt.executeQuery();
+        rs.next();
+        String creditCard = rs.getString("creditCard");
+
+        if (creditCard == null || creditCard.isBlank()) {
+            System.out.println("You do not have a credit card on file. A credit card is required to book a listing.");
+            System.out.println("Please enter your credit card number (no dashes): ");
+            creditCard = scanner.nextLine();
+
+            // Update the credit card in the database
+            stmt = conn.prepareStatement("UPDATE Users SET creditCard = ? WHERE username = ?;");
+            stmt.setString(1, creditCard);
+            stmt.setString(2, username);
+            stmt.execute();
+            System.out.println("Credit card updated successfully!");
+        }
+
+        rs.close();
+        stmt.close();
     }
 
 
