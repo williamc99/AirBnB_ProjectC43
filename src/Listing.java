@@ -1,4 +1,5 @@
 import java.time.LocalDate;
+import java.util.*;
 
 public class Listing {
     int listingID;
@@ -12,6 +13,7 @@ public class Listing {
     float longitude;
     float latitude;
     String amenities;
+    ArrayList<String> amenitiesList;
 
     public Listing() {
     }
@@ -84,4 +86,13 @@ public class Listing {
         this.price = price;
     }
 
+    public int getListingID() { return listingID; }
+
+    public void setAmenitiesList(List<String> amenitiesList) {
+        this.amenitiesList = new ArrayList<>(amenitiesList);
+    }
+
+    public ArrayList<String> getAmenitiesList() {
+        return this.amenitiesList;
+    }
 }

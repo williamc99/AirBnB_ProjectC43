@@ -1,10 +1,9 @@
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.Comparator;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Scanner;
 
 public class Main {
 
@@ -146,7 +145,7 @@ public class Main {
 
 
     // Book a listing
-    private static void handleOption2(Scanner scanner, Connection conn) {
+    private static void handleOption2(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
         int choice;
 
@@ -169,54 +168,103 @@ public class Main {
             // Make sure that the user input is an integer and is within the range of the menu
             if (choice < 0 || choice > 3) {
                 System.out.println("Invalid choice. Please try again.\n");
+            } else if (choice == 0){
+                printBackToMainMenu();
+                return;
+            } else {
+                break;
             }
-            else if (choice == 0){
+        }
+
+        // Longitude/Latitude Search
+        if (choice == 1){
+            // Ask user for longitude/latitude
+            System.out.println("Please enter the longitude (up to 6 decimal places): ");
+            float longitude = scanner.nextFloat();
+            scanner.nextLine();
+            System.out.println("Please enter the latitude (up to 6 decimal places): ");
+            float latitude = scanner.nextFloat();
+            scanner.nextLine();
+
+            // Ask user for a distance radius
+            int radius = 25;
+            System.out.println("Please enter a distance radius (in km): ");
+            System.out.println("(The default is 25 km)");
+            radius = scanner.nextInt();
+            scanner.nextLine();
+
+            // Get all listings and iterate through them
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery("SELECT * FROM Listings;");
+            List<DistancePair> distancePairs = new ArrayList<>();
+
+            // Iterate through all listings
+            while (rs.next()){
+                // Get the listing's longitude and latitude
+                float listingLongitude = rs.getFloat("longitude");
+                float listingLatitude = rs.getFloat("latitude");
+
+                // Calculate the distance between the target and the listing
+                float distance = calculateDistance(longitude, latitude, listingLongitude, listingLatitude, radius);
+
+                // If the distance is within the radius, add the listing to the list of distance pairs
+                if (distance != -1) {
+                    Listing listing = new Listing(rs.getString("hostID"),
+                            rs.getString("listingType"), rs.getString("address"),
+                            rs.getString("country"), rs.getString("city"),
+                            rs.getString("postalCode"), rs.getFloat("price"),
+                            rs.getFloat("longitude"), rs.getFloat("latitude"),
+                            rs.getString("amenities"));
+                    listing.setListingID(rs.getInt("listingID"));
+                    listing.setAmenitiesList(getAmenities(conn, listing.amenities));
+
+                    distancePairs.add(new DistancePair(listing, distance));
+                }
+            }
+
+            // If list is empty, print error message
+            if (distancePairs.isEmpty()){
+                System.out.println("No listings found within the radius.");
                 printBackToMainMenu();
                 return;
             }
-            else {
-                break;
+
+            // Sort the list of distance pairs by distance
+            distancePairs.sort(new Comparator<DistancePair>() {
+                @Override
+                public int compare(DistancePair o1, DistancePair o2) {
+                    return Double.compare(o1.getDistance(), o2.getDistance());
+                }
+            });
+
+            // Iterate through list and print out the listings
+            for (DistancePair d : distancePairs){
+                System.out.println("\n");
+                displayListingWithDistance(d.listing, d.distance);
             }
 
+            rs.close();
+            stmt.close();
         }
 
-        // Ask user for longitude/latitude
-        System.out.println("Please enter the longitude: ");
-        float longitude = scanner.nextFloat();
-        scanner.nextLine();
-        System.out.println("Please enter the latitude: ");
-        float latitude = scanner.nextFloat();
+        System.out.println("Enter the listing ID of the listing you would like to book: ");
+        int chosenID = scanner.nextInt();
         scanner.nextLine();
 
+        // Ask user for username
+        System.out.println("Please enter your username: ");
+        String username = scanner.nextLine();
 
-        // Searching using longitude/latitude
-        if (choice == 1) {
-            // Get
-
-
-
-
-
-
-
-        } else if (choice == 2) {
-            //Search for a listing using listing ID
-            System.out.println("Please enter the listing ID: ");
-            String listingID = scanner.nextLine();
-            // Show the listing info and the available dates
-            // Make sure that the user books one day or a row of days
-            // Ask user for username and make sure they have a credit card on file
-            // If not, ask them to enter a credit card and update in database
-            // Ask user for information, time, etc.
-            // Create a new booking object
-            // Push the new booking to the database
+        if (loginUser(scanner, conn, username)) {
+            printBackToMainMenu();
+            return;
         }
 
+        // Check if user has a credit card on file
 
 
-        // Show the listing info and the available dates
+
         // Make sure that the user books one day or a row of days
-        // Ask user for username and make sure they have a credit card on file
         // If not, ask them to enter a credit card and update in database
         // Ask user for information, time, etc.
         // Create a new booking object
@@ -252,23 +300,11 @@ public class Main {
     private static void handleOption4(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
 
-
         // Ask user for username
-        System.out.println("Please enter a username (max 16 characters) : ");
+        System.out.println("Please enter your username: ");
         String username = scanner.nextLine();
-        // Check in database to see if username exists
-        if (!checkUsernameExists(username, conn)) {
-            System.out.println("Username does not exist. Please try again.");
-            printBackToMainMenu();
-            return;
-        }
 
-        // Ask user for password
-        System.out.println("Please enter your password: ");
-        String password = scanner.nextLine();
-        // Check to see if password matches with username
-        if (!verifyLogin(username, password, conn)) {
-            System.out.println("Password does not match. Please try again.");
+        if (loginUser(scanner, conn, username)) {
             printBackToMainMenu();
             return;
         }
@@ -535,8 +571,33 @@ public class Main {
     private static void handleOption8(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
 
+//        List<DistancePair> distancePairs = new ArrayList<>();
+//        Listing l1 = new Listing();
+//        distancePairs.add(new DistancePair(l1, 1.0));
+//        distancePairs.add(new DistancePair(l1, 1.5));
+//        distancePairs.add(new DistancePair(l1, 1.3333));
+//        distancePairs.add(new DistancePair(l1, 1.3334));
+//
+//
+//        distancePairs.sort(new Comparator<DistancePair>() {
+//            @Override
+//            public int compare(DistancePair o1, DistancePair o2) {
+//                return Double.compare(o1.getDistance(), o2.getDistance());
+//            }
+//        });
+//
+//        for (DistancePair d : distancePairs){
+//            System.out.println(d.getListing());
+//            System.out.println(d.getDistance());
+//        }
 
-        System.out.println("Viewing Reports... (to be implemented)");
+//        ArrayList<String> arr = new ArrayList<>();
+//        arr.add("1");
+//        arr.add("2");
+//        arr.add("3");
+//        arr.add("4");
+//
+//        System.out.println(arr);
 
 
         printBackToMainMenu();
@@ -666,7 +727,7 @@ public class Main {
         return false;
     }
 
-    private static float checkWithinRadius(float startLongitude, float startLatitude, float targetLongitude,
+    private static float calculateDistance(float startLongitude, float startLatitude, float targetLongitude,
                                              float targetLatitude, int radius) {
         // Given two longitude/latitude pairs, check if the target is within the radius of the start
         double AVERAGE_RADIUS_OF_EARTH = 6371;
@@ -690,26 +751,65 @@ public class Main {
         return distance;
     }
 
-    private static void sortDistancePairArray(DistancePair[] arr){
-        Comparator<DistancePair> comparator = new Comparator<>() {
-            @Override
-            public int compare(DistancePair p1, DistancePair p2) {
-                return Double.compare(p1.distance, p2.distance);
-            }
-        };
-        Arrays.sort(arr, comparator);
-    }
-
     private static void displayListingWithDistance(Listing listing, double distance) {
         System.out.println("Listing ID: " + listing.listingID);
         System.out.println("Listing Type: " + listing.listingType);
         System.out.println("Address: " + listing.address);
         System.out.println(listing.city + ", " + listing.country);
         System.out.println("Postal Code: " + listing.postalCode);
+        System.out.println("Amenities: " + listing.amenitiesList);
         System.out.println("Host ID: " + listing.hostID);
-        System.out.println("Distance from you: " + distance + "\n");
-        System.out.println("Price: " + listing.price);
+        System.out.println("Distance from you: " + String.format("%.2f", distance) + " km\n");
+        System.out.println("Price: $" + String.format("%.2f", listing.price));
     }
+
+    private static boolean loginUser(Scanner scanner, Connection conn, String username) throws SQLException {
+        // Check in database to see if username exists
+        if (!checkUsernameExists(username, conn)) {
+            System.out.println("Username does not exist. Please try again.");
+            printBackToMainMenu();
+            return true;
+        }
+        // Ask user for password
+        System.out.println("Please enter your password: ");
+        String password = scanner.nextLine();
+        // Check to see if password matches with username
+        if (!verifyLogin(username, password, conn)) {
+            System.out.println("Password does not match. Please try again.");
+            return true;
+        }
+
+        return false;
+    }
+
+    private static ArrayList<String> getAmenities(Connection conn, String amenitiesString) throws SQLException {
+        // Check that amenitiesCodes is not null or blank
+        if (amenitiesString == null || amenitiesString.isBlank()) {
+            return null;
+        }
+
+        String[] amenitiesCodes = amenitiesString.split(",");
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Amenities WHERE amenityID = ?;");
+        ArrayList<String> amenities = new ArrayList<>();
+
+        for (String code: amenitiesCodes) {
+            int amenityID = Integer.parseInt(code);
+            stmt.setInt(1, amenityID);
+            ResultSet rs = stmt.executeQuery();
+
+            // If amenity exists, add to list
+            if (rs.next()) {
+                amenities.add(rs.getString("amenityName"));
+            } else {
+                System.out.println("Amenity with ID: " + amenityID + " does not exist.");
+            }
+        }
+        stmt.close();
+
+        return amenities;
+    }
+
+
 
     // Helper function for printing back to main menu message
     private static void printBackToMainMenu() {

@@ -1,20 +1,20 @@
 public class DistancePair {
-    int listingID;
+    Listing listing;
     double distance;
 
     public DistancePair(){}
 
-    public DistancePair(int listingID, double distance){
-        this.listingID = listingID;
+    public DistancePair(Listing listing, double distance){
+        this.listing = listing;
         this.distance = distance;
     }
 
-    public int getListingID(){
-        return listingID;
+    public Listing getListing(){
+        return this.listing;
     }
-
     public double getDistance(){
         return distance;
     }
+    public int getListingID(){ return listing.getListingID(); }
 
 }
