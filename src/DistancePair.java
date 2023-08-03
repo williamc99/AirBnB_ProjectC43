@@ -1,4 +1,6 @@
 public class DistancePair {
+   //TODO: Remove this class
+
     Listing listing;
     double distance;
 

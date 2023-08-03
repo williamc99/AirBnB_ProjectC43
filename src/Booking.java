@@ -1,14 +1,57 @@
 import java.time.LocalDate;
 
 public class Booking {
-    String bookingID;
-    String listingID;
+    int bookingID;
+    int listingID;
     String userID;
     String status;
-    LocalDate startDate;  //might not need
-    LocalDate endDate;    //might not need
+    String statusReason;
+    float price;
+    LocalDate startDate;
+    LocalDate endDate;
 
-    public Booking(){
+
+    public Booking() {
     }
-// CHECK (hostRating BETWEEN 1 AND 5 AND listingRating BETWEEN 1 AND 5 AND renterRating BETWEEN 1 AND 5)
+
+    public Booking(int listingID, String userID, String status, LocalDate startDate, LocalDate endDate) {
+        this.listingID = listingID;
+        this.userID = userID;
+        this.status = status;
+        this.startDate = startDate;
+        this.endDate = endDate;
+    }
+
+    public void setBookingID(int bookingID) {
+        this.bookingID = bookingID;
+    }
+
+    public void setStatusReason(String statusReason) {
+        this.statusReason = statusReason;
+    }
+
+    public void setPrice(float price) {
+        this.price = price;
+    }
+
+    public String validateData(){
+        // If any of the fields are empty, return false
+        if (userID.equals("") || status.equals("") || startDate == null || endDate ==null){
+            return "All fields must be filled out, do not leave any fields blank.";
+        }
+        // If any of the fields are too long, return false
+        if (userID.length() > 16 || status.length() > 16){
+            return "One or more fields are too long.";
+        }
+        // If startDate is after endDate or endDate is before startDate, return false
+        if (startDate.isAfter(endDate)){
+            return "Start date must be before end date.";
+        }
+        else if (endDate.isBefore(startDate)){
+            return "End date must be after start date.";
+        }
+
+        return "pass";
+    }
+
 }

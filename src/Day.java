@@ -1,5 +1,7 @@
 import java.time.LocalDate;
 
+//TODO: Remove this class
+
 public class Day {
     int dayID;
     int listingID;

@@ -323,13 +323,6 @@ public class Main {
         }
 
 
-
-
-
-
-
-
-
         // If list is empty, print error message
         if (listings.isEmpty()) {
             System.out.println("No listings found with the specified search parameters.");
@@ -484,50 +477,54 @@ public class Main {
         newListing.setListingID(listingID);
         System.out.println("New listing with ID: '" + newListing.listingID + "' created successfully!\n");
 
-        // Ask the user for dates
-        boolean exit = false;
-        while (!exit) {
-            System.out.println("Please enter the availability dates for your listing");
-            System.out.println("Note that you must provide a time range, and must be a minimum of 1 night.");
-            System.out.print("Enter the start date (YYYY-MM-DD): ");
-            String startDate = scanner.nextLine();
-            System.out.print("Enter the end date (YYYY-MM-DD): ");
-            String endDate = scanner.nextLine();
+        // Ask the user for dates that they are unavailable
+        System.out.println("By default, we assume you are available to rent all year round.");
+        System.out.println("Would you like to add a date range where you are unavailable? (y/n): ");
+        String answer = scanner.nextLine();
 
-            if (checkOverlap(LocalDate.parse(startDate), LocalDate.parse(endDate), listingID, conn)) {
-                System.out.println("\nThe dates you entered are not available. Please try again.");
-                continue;
+        if (answer.equals("y")) {
+            boolean exit = false;
+            while (!exit) {
+                System.out.print("Enter the start date (YYYY-MM-DD): ");
+                String startDate = scanner.nextLine();
+                System.out.print("Enter the end date (YYYY-MM-DD): ");
+                String endDate = scanner.nextLine();
+
+                // Check if the date range has already been set to unavailable
+                if (checkOverlapUnavailable(conn, LocalDate.parse(startDate), LocalDate.parse(endDate), listingID)) {
+                    continue;
+                }
+
+                // Create a new booking object
+                Booking newBooking = new Booking(listingID, username, "unavailable", LocalDate.parse(startDate), LocalDate.parse(endDate));
+                validation = newBooking.validateData();
+                if (!validation.equals("pass")) {
+                    System.out.println(validation);
+                    printBackToMainMenu();
+                    return;
+                }
+
+                //Push the new booking to the database
+                stmt = conn.prepareStatement("INSERT INTO Bookings VALUES(default, ?, ?, ?, NULL, NULL, ?, ?)");
+                stmt.setInt(1, newBooking.listingID);
+                stmt.setString(2, newBooking.userID);
+                stmt.setString(3, newBooking.status);
+                stmt.setDate(4, Date.valueOf(newBooking.startDate));
+                stmt.setDate(5, Date.valueOf(newBooking.endDate));
+                stmt.execute();
+
+                System.out.println("The date range: " + startDate + " to " + endDate +
+                        " has been set to unavailable for listing with ID: " + listingID + "\n");
+
+                System.out.println("Would you like to add another availability? (y/n): ");
+                String choice = scanner.nextLine();
+                if (choice.equals("n")) {
+                    exit = true;
+                }
+                System.out.println("\n");
             }
-
-            Day newDay = new Day(listingID, "available", startDate, endDate);
-            validation = newDay.validateData();
-            if (!validation.equals("pass")) {
-                System.out.println(validation);
-                printBackToMainMenu();
-                return;
-            }
-
-            //Push the new day to the database
-            stmt = conn.prepareStatement("INSERT INTO Days VALUES(default,?,NULL,?,?,?)");
-            stmt.setInt(1, newDay.listingID);
-            stmt.setString(2, newDay.status);
-            stmt.setDate(3, Date.valueOf(newDay.startDate));
-            stmt.setDate(4, Date.valueOf(newDay.endDate));
-            stmt.execute();
-
-            System.out.println("New availability for listing with ID: '" + newDay.listingID + "' with start date: '"
-                    + newDay.startDate.toString() + "' and end date: '" + newDay.endDate.toString()
-                    + "' created successfully!\n");
-
-            System.out.println("Would you like to add another availability? (y/n): ");
-            String answer = scanner.nextLine();
-            if (answer.equals("n")) {
-                exit = true;
-            }
-            System.out.println("\n");
+            stmt.close();
         }
-        stmt.close();
-
         // Return to main menu
         printBackToMainMenu();
     }
@@ -713,6 +710,7 @@ public class Main {
         printBackToMainMenu();
     }
 
+
     private static boolean checkUsernameExists(String username, Connection conn) throws SQLException {
         // Check in database to see if username exists
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Users WHERE username = ?");
@@ -809,35 +807,37 @@ public class Main {
         return listingID;
     }
 
-    public static boolean checkOverlap(LocalDate startDate, LocalDate endDate, int listingID, Connection conn) {
+    public static boolean checkOverlapUnavailable(Connection conn, LocalDate startDate, LocalDate endDate, int listingID) throws SQLException {
         // Given a start date and end date, check if there are any bookings that overlap with the given dates
+        PreparedStatement stmt = conn.prepareStatement("SELECT * from Bookings WHERE listingID = ? " +
+                "AND status = 'unavailable' AND startDate <= ? AND endDate >= ?;");
+        stmt.setInt(1, listingID);
+        stmt.setDate(2, Date.valueOf(endDate));
+        stmt.setDate(3, Date.valueOf(startDate));
+        ResultSet rs = stmt.executeQuery();
 
-        //TODO: Maybe change this so that it shows and checks for listings that are either booked or available
-        //TODO: Can use the WHERE NOT 'cancelled' 
-
-        try {
-            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Days WHERE listingID = ? AND status = 'available' AND startDate <= ? AND endDate >= ?;");
-            stmt.setInt(1, listingID);
-            stmt.setDate(2, Date.valueOf(endDate));
-            stmt.setDate(3, Date.valueOf(startDate));
-            ResultSet rs = stmt.executeQuery();
-
-            // If there is a booking that overlaps, return true
-            if (rs.next()) {
-                rs.close();
-                stmt.close();
-                return true;
+        // If there is a booking that overlaps, return true
+        if (rs.isBeforeFirst()) {
+            System.out.println("There is a booking that overlaps with the given dates. ");
+            System.out.println("Please consider the existing unavailable dates and try again: ");
+            while (rs.next()){
+                System.out.println("Unavailable from " + rs.getDate("startDate") + " to " + rs.getDate("endDate"));
             }
+            System.out.println("\n");
             rs.close();
             stmt.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
+            return true;
         }
+
+        rs.close();
+        stmt.close();
         return false;
     }
 
     private static float calculateDistance(float startLongitude, float startLatitude, float targetLongitude,
                                            float targetLatitude, int radius) {
+        //TODO: Remove this function
+
         // Given two longitude/latitude pairs, check if the target is within the radius of the start
         double AVERAGE_RADIUS_OF_EARTH = 6371;
         double latDistance = Math.toRadians(startLatitude - targetLatitude);
@@ -975,4 +975,3 @@ public class Main {
         System.out.println("------------------------------------------------------------");
     }
 }
-
