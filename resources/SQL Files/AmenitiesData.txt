@@ -1,0 +1,33 @@
+// Essentials:
+Wifi, Kitchen, Washer, Dryer, Air conditioning, Heating, Dedicated workspace, TV, Hair dryer, Iron
+// Features
+Pool,Hot tub,Free parking,EV charger,Crib,Gym,BBQ grill,Breakfast,Indoor fireplace,Smoking allowed,
+// Location
+Beachfront, Waterfront
+//Safety
+Smoke alarm, Carbon monoxide alarm
+
+INSERT into Amenities VALUES (1, 'Wifi');
+INSERT into Amenities VALUES (2, 'Kitchen');
+INSERT into Amenities VALUES (3, 'Washer');
+INSERT into Amenities VALUES (4, 'Dryer');
+INSERT into Amenities VALUES (5, 'Air conditioning');
+INSERT into Amenities VALUES (6, 'Heating');
+INSERT into Amenities VALUES (7, 'Dedicated workspace');
+INSERT into Amenities VALUES (8, 'TV');
+INSERT into Amenities VALUES (9, 'Hair dryer');
+INSERT into Amenities VALUES (10, 'Iron');
+INSERT into Amenities VALUES (11, 'Pool');
+INSERT into Amenities VALUES (12, 'Hot tub');
+INSERT into Amenities VALUES (13, 'Free parking');
+INSERT into Amenities VALUES (14, 'EV charger');
+INSERT into Amenities VALUES (15, 'Crib');
+INSERT into Amenities VALUES (16, 'Gym');
+INSERT into Amenities VALUES (17, 'BBQ grill');
+INSERT into Amenities VALUES (18, 'Breakfast');
+INSERT into Amenities VALUES (19, 'Indoor fireplace');
+INSERT into Amenities VALUES (20, 'Smoking allowed');
+INSERT into Amenities VALUES (21, 'Beachfront');
+INSERT into Amenities VALUES (22, 'Waterfront');
+INSERT into Amenities VALUES (23, 'Smoke alarm');
+INSERT into Amenities VALUES (24, 'Carbon monoxide alarm');
