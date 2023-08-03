@@ -175,7 +175,7 @@ public class Main {
             // Make sure that the user input is an integer and is within the range of the menu
             if (choice < 0 || choice > 4) {
                 System.out.println("Invalid choice. Please try again.\n");
-            } else if (choice == 0){
+            } else if (choice == 0) {
                 printBackToMainMenu();
                 return;
             } else {
@@ -183,12 +183,11 @@ public class Main {
             }
         }
 
-        //TODO: Use a single declaration of ArrayList<Listing> that can be used for all queries
+        // Declare array list to store listings
+        ArrayList<Listing> listings = new ArrayList<>();
 
         // Longitude/Latitude Search
-        if (choice == 1){
-            //TODO: Look at Discord for the Haversine Distance query
-
+        if (choice == 1) {
             // Ask user for longitude/latitude
             System.out.println("Please enter the longitude (up to 6 decimal places): ");
             float longitude = scanner.nextFloat();
@@ -204,65 +203,106 @@ public class Main {
             radius = scanner.nextInt();
             scanner.nextLine();
 
+            // Ask user how they would like to order the listings
+            int orderChoice = 1;
+            while (true) {
+                System.out.println("How would you like to order the listings?");
+                System.out.println("(1) Distance");
+                System.out.println("(2) Price (ascending)");
+                System.out.println("(3) Price (descending)");
+                System.out.print("Enter your choice: ");
+                orderChoice = scanner.nextInt();
+                scanner.nextLine();
+
+                if (orderChoice < 1 || orderChoice > 3) {
+                    System.out.println("Invalid choice. Please try again.");
+                } else {
+                    break;
+                }
+            }
+
             // Get all listings and iterate through them
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery("SELECT * FROM Listings;");
-            List<DistancePair> distancePairs = new ArrayList<>();
+            // This query uses the Haversine formula to calculate distance between two latitude/longitude points
+            // The 6371 constant is the radius of the Earth in km (makes sure that the distance is in km)
+            PreparedStatement stmt = conn.prepareStatement("SELECT *, ( 6371 * acos( cos( radians(latitude) ) * " +
+                    "cos( radians( ? ) ) * cos( radians(?) - radians(longitude) ) + sin( radians(latitude) ) * sin( radians(?)))) " +
+                    "AS distance FROM Listings HAVING distance < ? ORDER BY ?;");
+            stmt.setFloat(1, latitude);
+            stmt.setFloat(2, longitude);
+            stmt.setFloat(3, latitude);
+            stmt.setInt(4, radius);
 
-            // Iterate through all listings
-            while (rs.next()){
-                // Get the listing's longitude and latitude
-                float listingLongitude = rs.getFloat("longitude");
-                float listingLatitude = rs.getFloat("latitude");
-
-                // Calculate the distance between the target and the listing
-                float distance = calculateDistance(longitude, latitude, listingLongitude, listingLatitude, radius);
-
-                // If the distance is within the radius, add the listing to the list of distance pairs
-                if (distance != -1) {
-                    Listing listing = new Listing(rs.getString("hostID"),
-                            rs.getString("listingType"), rs.getString("address"),
-                            rs.getString("country"), rs.getString("city"),
-                            rs.getString("postalCode"), rs.getFloat("price"),
-                            rs.getFloat("longitude"), rs.getFloat("latitude"),
-                            rs.getString("amenities"));
-                    listing.setListingID(rs.getInt("listingID"));
-                    listing.setAmenitiesList(getAmenities(conn, listing.amenities));
-
-                    distancePairs.add(new DistancePair(listing, distance));
-                }
+            if (orderChoice == 1) {
+                stmt.setString(5, "distance");
+            } else if (orderChoice == 2) {
+                stmt.setString(5, "price ASC");
+            } else {
+                stmt.setString(5, "price DESC");
             }
+            ResultSet rs = stmt.executeQuery();
 
-            // If list is empty, print error message
-            if (distancePairs.isEmpty()){
-                System.out.println("No listings found within the radius.");
-                printBackToMainMenu();
-                return;
+            // Iterate through all listings, create listing objects from them and add to the array list
+            while (rs.next()) {
+                Listing listing = new Listing(rs.getString("hostID"),
+                        rs.getString("listingType"), rs.getString("address"),
+                        rs.getString("country"), rs.getString("city"),
+                        rs.getString("postalCode"), rs.getFloat("price"),
+                        rs.getFloat("longitude"), rs.getFloat("latitude"),
+                        rs.getString("amenities"));
+                listing.setListingID(rs.getInt("listingID"));
+                listing.setDistance(rs.getFloat("distance"));
+                listing.setAmenitiesList(getAmenities(conn, listing.amenities));
+                listings.add(listing);
             }
-
-            // Sort the list of distance pairs by distance
-            distancePairs.sort(new Comparator<DistancePair>() {
-                @Override
-                public int compare(DistancePair o1, DistancePair o2) {
-                    return Double.compare(o1.getDistance(), o2.getDistance());
-                }
-            });
-
-            // Iterate through list and print out the listings
-            for (DistancePair d : distancePairs){
-                System.out.println("\n");
-                displayListingWithDistance(d.listing, d.distance);
-            }
-
             rs.close();
             stmt.close();
         }
         // Search by postal code
-        else if (choice == 2){
-            System.out.println("Choice 2");
+        else if (choice == 2) {
+            // Ask user to enter postal code
+            System.out.println("Please enter the postal code (ex. A1A 1A1): ");
+            String postalCode = scanner.nextLine();
+
+            // Search for exact postal code first
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Listings WHERE postalCode = ?;");
+            stmt.setString(1, postalCode);
+            ResultSet rs = stmt.executeQuery();
+
+            // Iterate through all listings, create listing objects from them and add to the array list
+            while (rs.next()) {
+                Listing listing = new Listing(rs.getString("hostID"),
+                        rs.getString("listingType"), rs.getString("address"),
+                        rs.getString("country"), rs.getString("city"),
+                        rs.getString("postalCode"), rs.getFloat("price"),
+                        rs.getFloat("longitude"), rs.getFloat("latitude"),
+                        rs.getString("amenities"));
+                listing.setListingID(rs.getInt("listingID"));
+                listing.setAmenitiesList(getAmenities(conn, listing.amenities));
+                listings.add(listing);
+            }
+
+            // Ask user if they would like to search adjacent postal codes
+            System.out.println("Would you like to include adjacent postal codes in your search? (y/n)");
+            String answer = scanner.nextLine();
+
+            if (answer.equals("y") || answer.equals("Y")) {
+                // Get the first 3 characters of the postal code
+                String firstThree = postalCode.substring(0, 3);
+
+                // Get all listings with the same first 3 characters
+                stmt = conn.prepareStatement("SELECT * FROM Listings WHERE postalCode LIKE ?;");
+                stmt.setString(1, firstThree + "%");
+                rs = stmt.executeQuery();
+
+                // Store listings into array list
+                storeListings(conn, rs, listings);
+
+                rs.close();
+                stmt.close();
+            }
         }
         // Search by exact address
-        else if (choice == 3){
+        else if (choice == 3) {
             // Ask user for address
             System.out.println("Please enter the EXACT address: ");
             String address = scanner.nextLine();
@@ -271,16 +311,11 @@ public class Main {
             stmt.setString(1, address);
             ResultSet rs = stmt.executeQuery();
 
-            // If list is empty, print error message
-            if (!rs.next()){
-                System.out.println("No listings found with the address '" + address + "'.");
-                printBackToMainMenu();
-                return;
-            }
+            // Store listings into array list
+            storeListings(conn, rs, listings);
 
-            while (rs.next()){
-                // Do something
-            }
+            rs.close();
+            stmt.close();
         }
         // Search by temporal filter
         else {
@@ -292,8 +327,29 @@ public class Main {
 
 
 
-        // Choosing and booking a listing
 
+
+
+        // If list is empty, print error message
+        if (listings.isEmpty()) {
+            System.out.println("No listings found with the specified search parameters.");
+            printBackToMainMenu();
+            return;
+        }
+
+        // Iterate through list and print out the listings
+        for (Listing listing : listings) {
+            System.out.println("\n");
+            if (choice == 1) {
+                displayListingWithDistance(listing);
+            } else {
+                displayListing(listing);
+            }
+        }
+
+
+        // Choosing and booking a listing
+        System.out.print("\n\n");
         System.out.println("Enter the listing ID of the listing you would like to book: ");
         int chosenID = scanner.nextInt();
         scanner.nextLine();
@@ -753,7 +809,7 @@ public class Main {
         return listingID;
     }
 
-    public static boolean checkOverlap(LocalDate startDate, LocalDate endDate, int listingID, Connection conn){
+    public static boolean checkOverlap(LocalDate startDate, LocalDate endDate, int listingID, Connection conn) {
         // Given a start date and end date, check if there are any bookings that overlap with the given dates
 
         //TODO: Maybe change this so that it shows and checks for listings that are either booked or available
@@ -781,7 +837,7 @@ public class Main {
     }
 
     private static float calculateDistance(float startLongitude, float startLatitude, float targetLongitude,
-                                             float targetLatitude, int radius) {
+                                           float targetLatitude, int radius) {
         // Given two longitude/latitude pairs, check if the target is within the radius of the start
         double AVERAGE_RADIUS_OF_EARTH = 6371;
         double latDistance = Math.toRadians(startLatitude - targetLatitude);
@@ -797,14 +853,14 @@ public class Main {
 
         float distance = (float) (AVERAGE_RADIUS_OF_EARTH * c);
 
-        if (distance > radius){
+        if (distance > radius) {
             return -1;
         }
 
         return distance;
     }
 
-    private static void displayListingWithDistance(Listing listing, double distance) {
+    private static void displayListing(Listing listing) {
         System.out.println("Listing ID: " + listing.listingID);
         System.out.println("Listing Type: " + listing.listingType);
         System.out.println("Address: " + listing.address);
@@ -812,7 +868,18 @@ public class Main {
         System.out.println("Postal Code: " + listing.postalCode);
         System.out.println("Amenities: " + listing.amenitiesList);
         System.out.println("Host ID: " + listing.hostID);
-        System.out.println("Distance from you: " + String.format("%.2f", distance) + " km\n");
+        System.out.println("\nPrice: $" + String.format("%.2f", listing.price));
+    }
+
+    private static void displayListingWithDistance(Listing listing) {
+        System.out.println("Listing ID: " + listing.listingID);
+        System.out.println("Listing Type: " + listing.listingType);
+        System.out.println("Address: " + listing.address);
+        System.out.println(listing.city + ", " + listing.country);
+        System.out.println("Postal Code: " + listing.postalCode);
+        System.out.println("Amenities: " + listing.amenitiesList);
+        System.out.println("Host ID: " + listing.hostID);
+        System.out.println("Distance from you: " + String.format("%.2f", listing.getDistance()) + " km\n");
         System.out.println("Price: $" + String.format("%.2f", listing.price));
     }
 
@@ -845,7 +912,7 @@ public class Main {
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Amenities WHERE amenityID = ?;");
         ArrayList<String> amenities = new ArrayList<>();
 
-        for (String code: amenitiesCodes) {
+        for (String code : amenitiesCodes) {
             int amenityID = Integer.parseInt(code);
             stmt.setInt(1, amenityID);
             ResultSet rs = stmt.executeQuery();
@@ -887,6 +954,19 @@ public class Main {
         stmt.close();
     }
 
+    private static void storeListings(Connection conn, ResultSet rs, ArrayList<Listing> listings) throws SQLException {
+        while (rs.next()) {
+            Listing listing = new Listing(rs.getString("hostID"),
+                    rs.getString("listingType"), rs.getString("address"),
+                    rs.getString("country"), rs.getString("city"),
+                    rs.getString("postalCode"), rs.getFloat("price"),
+                    rs.getFloat("longitude"), rs.getFloat("latitude"),
+                    rs.getString("amenities"));
+            listing.setListingID(rs.getInt("listingID"));
+            listing.setAmenitiesList(getAmenities(conn, listing.amenities));
+            listings.add(listing);
+        }
+    }
 
 
     // Helper function for printing back to main menu message

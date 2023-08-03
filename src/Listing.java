@@ -14,6 +14,7 @@ public class Listing {
     float latitude;
     String amenities;
     ArrayList<String> amenitiesList;
+    float distance;
 
     public Listing() {
     }
@@ -94,5 +95,13 @@ public class Listing {
 
     public ArrayList<String> getAmenitiesList() {
         return this.amenitiesList;
+    }
+
+    public void setDistance(float distance) {
+        this.distance = distance;
+    }
+
+    public float getDistance() {
+        return this.distance;
     }
 }

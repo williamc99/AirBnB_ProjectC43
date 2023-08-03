@@ -34,10 +34,25 @@ CREATE TABLE Bookings(
     userID varchar(16) NOT NULL,
     status varchar(10) NOT NULL,
     statusReason varchar(10),
-    price float NOT NULL,
+    price float,
+    startDate DATE NOT NULL,
+    endDate DATE NOT NULL,
     PRIMARY KEY (bookingID),
     FOREIGN KEY (listingID) REFERENCES Listings(listingID),
     FOREIGN KEY (userID) REFERENCES Users(username)
+);
+
+CREATE TABLE Days(
+	dayID INT AUTO_INCREMENT,
+    listingID int NOT NULL,
+    bookingiD int,
+    status varchar(10) NOT NULL,
+    startDate DATE NOT NULL,
+    endDate DATE NOT NULL,
+    PRIMARY KEY (dayID),
+    UNIQUE KEY (listingID, startDate, endDate),
+    FOREIGN KEY (listingID) REFERENCES Listings(listingID),
+    FOREIGN KEY (bookingID) REFERENCES Bookings(bookingID)
 );
 
 CREATE TABLE Reviews(
@@ -55,19 +70,6 @@ CREATE TABLE Reviews(
     FOREIGN KEY (listingID) REFERENCES Listings(listingID)
 );
 
-CREATE TABLE Days(
-	dayID INT AUTO_INCREMENT,
-    listingID int NOT NULL,
-    bookingiD int,
-    status varchar(10) NOT NULL,
-    startDate DATE NOT NULL,
-    endDate DATE NOT NULL,
-    PRIMARY KEY (dayID),
-    UNIQUE KEY (listingID, startDate, endDate),
-    FOREIGN KEY (listingID) REFERENCES Listings(listingID),
-    FOREIGN KEY (bookingID) REFERENCES Bookings(bookingID)
-);
-
 CREATE TABLE Amenities(
     amenityID varchar(4) PRIMARY KEY NOT NULL,
     amenityName varchar(20) NOT NULL
@@ -75,5 +77,6 @@ CREATE TABLE Amenities(
 
 INSERT into Users VALUES ('swaawilliam', '123', 'William', 'Slicer', '123 Street', 'Student', '123456789', 'creditCardnum', '1992-02-13');
 INSERT into Listings VALUES (default, 'swaawilliam', 'House', '100 Addy', 'Canada', 'Toronto', 'M1P 2S2', 400.00, 23.000000, 42.000000, "1,");
+INSERT into Listings VALUES (default, 'swaawilliam', 'Apartment', '200 Addy', 'Canada', 'Scarborough', 'M4S 3R3', 200.00, 12.000000, 32.000000, "1,");
 INSERT into Amenities VALUES (1, 'Pool');
 INSERT into Days VALUES (default, 4, NULL, 'available', 2022-12-13, 2022-12-26);
