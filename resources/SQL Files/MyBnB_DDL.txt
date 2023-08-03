@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS Users, Listings, Bookings, Reviews, Days, Amenities;
+DROP TABLE IF EXISTS Users, Listings, Bookings, Reviews, Amenities;
 
 CREATE TABLE Users(
     username varchar(16) PRIMARY KEY NOT NULL,
@@ -40,19 +40,6 @@ CREATE TABLE Bookings(
     PRIMARY KEY (bookingID),
     FOREIGN KEY (listingID) REFERENCES Listings(listingID),
     FOREIGN KEY (userID) REFERENCES Users(username)
-);
-
-CREATE TABLE Days(
-	dayID INT AUTO_INCREMENT,
-    listingID int NOT NULL,
-    bookingiD int,
-    status varchar(10) NOT NULL,
-    startDate DATE NOT NULL,
-    endDate DATE NOT NULL,
-    PRIMARY KEY (dayID),
-    UNIQUE KEY (listingID, startDate, endDate),
-    FOREIGN KEY (listingID) REFERENCES Listings(listingID),
-    FOREIGN KEY (bookingID) REFERENCES Bookings(bookingID)
 );
 
 CREATE TABLE Reviews(
