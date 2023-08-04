@@ -173,7 +173,7 @@ public class Main {
             scanner.nextLine();
 
             // Make sure that the user input is an integer and is within the range of the menu
-            if (choice < 0 || choice > 4) {
+            if (choice < 0 || choice > 3) {
                 System.out.println("Invalid choice. Please try again.\n");
             } else if (choice == 0) {
                 printBackToMainMenu();
@@ -224,19 +224,25 @@ public class Main {
             // Get all listings and iterate through them
             // This query uses the Haversine formula to calculate distance between two latitude/longitude points
             // The 6371 constant is the radius of the Earth in km (makes sure that the distance is in km)
-            PreparedStatement stmt = conn.prepareStatement("SELECT *, ( 6371 * acos( cos( radians(latitude) ) * " +
-                    "cos( radians( ? ) ) * cos( radians(?) - radians(longitude) ) + sin( radians(latitude) ) * sin( radians(?)))) " +
-                    "AS distance FROM Listings HAVING distance < ? ORDER BY ?;");
+            String sql = "SELECT * FROM ( SELECT *, ( 6371 * acos(cos(radians(latitude)) * " +
+                    "cos(radians(?)) * cos(radians(?) - radians(longitude) ) + sin(radians(latitude)) * " +
+                    "sin(radians(?))) ) AS distance FROM Listings) AS x WHERE distance < ?";
+
+            if (orderChoice == 1) {
+                sql += " ORDER BY distance;";
+            } else{
+                sql += " ORDER BY ?;";
+            }
+
+            PreparedStatement stmt = conn.prepareStatement(sql);
             stmt.setFloat(1, latitude);
             stmt.setFloat(2, longitude);
             stmt.setFloat(3, latitude);
             stmt.setInt(4, radius);
 
-            if (orderChoice == 1) {
-                stmt.setString(5, "distance");
-            } else if (orderChoice == 2) {
-                stmt.setString(5, "price ASC");
-            } else {
+            if (orderChoice == 2) {
+                stmt.setString(5, "price");
+            } else if (orderChoice == 3){
                 stmt.setString(5, "price DESC");
             }
             ResultSet rs = stmt.executeQuery();
@@ -302,7 +308,7 @@ public class Main {
             }
         }
         // Search by exact address
-        else if (choice == 3) {
+        else {
             // Ask user for address
             System.out.println("Please enter the EXACT address: ");
             String address = scanner.nextLine();
@@ -317,11 +323,108 @@ public class Main {
             rs.close();
             stmt.close();
         }
-        // Search by temporal filter
-        else {
-            System.out.println("Choice 4");
+
+
+        // Filters
+        // Ask user if they would like to filter by amenities
+        System.out.println("Would you like to filter by amenities? (y/n)");
+        String answer = scanner.nextLine();
+
+        if (answer.equals("y") || answer.equals("Y")) {
+            // Ask user for amenities
+            String amenitiesString = recordAmenities(scanner, conn);
+            // Split amenitiesString by comma, convert each value to int and store in an int array
+            String[] amenitiesArray = amenitiesString.split(",");
+            int[] amenitiesIDArr = new int[amenitiesArray.length];
+            for (int i = 0; i < amenitiesArray.length; i++) {
+                amenitiesIDArr[i] = Integer.parseInt(amenitiesArray[i]);
+            }
+
+            // Iterate through ID array and create the SQL addon query
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < amenitiesIDArr.length; i++) {
+                if (i == 0) {
+                    builder.append("amenities LIKE '%").append(amenitiesIDArr[i]).append("%'");
+                } else {
+                    builder.append(" OR amenities LIKE '%").append(amenitiesIDArr[i]).append("%'");
+                }
+            }
+            String sqlAddOn = builder.toString();
+            String sql = "SELECT * FROM Listings WHERE listingID = ? AND (" + sqlAddOn + ");";
+
+            // Filter the listings
+            ArrayList<Listing> listingsToDelete = new ArrayList<>();
+            for (Listing listing : listings) {
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                stmt.setInt(1, listing.listingID);
+                ResultSet rs = stmt.executeQuery();
+                if (!rs.isBeforeFirst()) {
+                    listingsToDelete.add(listing);
+                }
+            }
+            listings.removeAll(listingsToDelete);
         }
 
+        // Ask user if they would like to filter by price
+        System.out.println("Would you like to filter by price? (y/n)");
+        answer = scanner.nextLine();
+
+        if (answer.equals("y") || answer.equals("Y")) {
+            // Ask user for price range
+            System.out.println("Please enter the minimum price: ");
+            float minPrice = scanner.nextFloat();
+            scanner.nextLine();
+            System.out.println("Please enter the maximum price: ");
+            float maxPrice = scanner.nextFloat();
+            scanner.nextLine();
+
+            // Filter the listings
+            ArrayList<Listing> listingsToDelete = new ArrayList<>();
+            for (Listing listing : listings) {
+                String sql = "SELECT * FROM Listings WHERE listingID = ? AND price BETWEEN ? AND ?;";
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                stmt.setInt(1, listing.listingID);
+                stmt.setFloat(2, minPrice);
+                stmt.setFloat(3, maxPrice);
+                ResultSet rs = stmt.executeQuery();
+                if (!rs.isBeforeFirst()) {
+                    listingsToDelete.add(listing);
+                }
+            }
+            listings.removeAll(listingsToDelete);
+        }
+
+        // Ask user if they would like to filter by availability range
+        System.out.println("Would you like to filter by availability range? (y/n)");
+        answer = scanner.nextLine();
+
+        if (answer.equals("y") || answer.equals("Y")) {
+            // Ask user for start date
+            System.out.println("Please enter the start date (YYYY-MM-DD): ");
+            String startDate = scanner.nextLine();
+            // Ask user for end date
+            System.out.println("Please enter the end date (YYYY-MM-DD): ");
+            String endDate = scanner.nextLine();
+
+            // Filter the listings
+            //TODO: Test this filter
+            ArrayList<Listing> listingsToDelete = new ArrayList<>();
+            for (Listing listing : listings) {
+                // Queries for listings that are available in the date range
+                String sql = "SELECT * FROM Listings WHERE listingID = ? AND listingID NOT IN " +
+                        "(SELECT listingID FROM Bookings WHERE startDate <= ? AND endDate >= ?);";
+                PreparedStatement stmt = conn.prepareStatement(sql);
+                stmt.setInt(1, listing.listingID);
+                stmt.setDate(2, Date.valueOf(endDate));
+                stmt.setDate(3, Date.valueOf(startDate));
+                ResultSet rs = stmt.executeQuery();
+                // If our selected listing does not show up in this query, remove it from the list
+                if (!rs.isBeforeFirst()) {
+                    listingsToDelete.add(listing);
+                }
+            }
+            listings.removeAll(listingsToDelete);
+        }
 
         // If list is empty, print error message
         if (listings.isEmpty()) {
@@ -368,7 +471,7 @@ public class Main {
 
         // Ask if the user wants to book another listing
         System.out.println("Would you like to book another listing? (Y/N)");
-        String answer = scanner.nextLine();
+        answer = scanner.nextLine();
         // While loop the entire function
 
         printBackToMainMenu();
@@ -752,7 +855,7 @@ public class Main {
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Amenities WHERE amenityName = ?;");
 
         while (!exit) {
-            System.out.println("Please enter the name of an amenity to include in your listing: ");
+            System.out.println("Please enter the name of an amenity: ");
             String amenity = scanner.nextLine();
 
             // Check if amenity exists in the database
@@ -761,9 +864,9 @@ public class Main {
 
             // If the amenity exists, concat the id to the string
             if (rs.next()) {
-                String amenityID = rs.getString("amenityID");
+                int amenityID = rs.getInt("amenityID");
                 //Concat amenityID and a comma to the string
-                amenities = amenities.concat(amenityID + ",");
+                amenities = amenities.concat(String.valueOf(amenityID) + ",");
                 System.out.println("Amenity " + amenity + " added successfully!");
             } else {
                 System.out.println("Amenity does not exist. Please try again.");
