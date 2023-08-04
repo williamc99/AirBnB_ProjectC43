@@ -151,18 +151,6 @@ public class Main {
         System.out.println("\n\n");
         int choice;
 
-        //TODO: Read the 'Queries to Support' section to see how to implement this function
-        // - Longitude/Latitude Search
-        // - Search by Postal Code
-        // - Search by exact address
-        // - Searching with temporal filter (i.e date range)
-        // --- Searching with amenities, time, and price filters
-
-        //TODO: Use SQL queries to implement these queries instead of Java
-        //TODO: Sort the listings by price ascending or descending
-        // For amenities: SELECT * FROM Listings WHERE amenities LIKE '%10%';
-        // or SELECT * FROM Listings WHERE CONCAT(',', amenities, ',') LIKE '%,10,%';
-
         while (true) {
             System.out.println("Would you like to: ");
             System.out.println("(1) Search for a listing using longitude/latitude");
@@ -462,7 +450,7 @@ public class Main {
                     break;
                 }
             }
-            if (!exit){
+            if (!exit) {
                 System.out.println("The listing ID you entered is invalid. Please try again.");
             }
         }
@@ -475,6 +463,14 @@ public class Main {
             printBackToMainMenu();
             return;
         }
+
+        // Check if the renter is also the host of the listing
+        if (username.equals(chosenListing.hostID)) {
+            System.out.println("You cannot book your own listing!.");
+            printBackToMainMenu();
+            return;
+        }
+
         // Check if user has a credit card on file
         checkCreditCard(scanner, conn, username);
 
@@ -523,17 +519,89 @@ public class Main {
 
 
     // Cancel a booking
-    private static void handleOption3(Scanner scanner, Connection conn) {
+    private static void handleOption3(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
 
+        // Ask user for username
+        System.out.println("Please enter your username: ");
+        String username = scanner.nextLine();
 
-        // Ask user for booking ID
-        System.out.println("Please enter the booking ID: ");
-        String bookingID = scanner.nextLine();
+        if (loginUser(scanner, conn, username)) {
+            printBackToMainMenu();
+            return;
+        }
 
-        // Check if booking ID exists in the database
-        // If it does, delete the booking
-        // If it doesn't, print error message
+        int bookingID = 0;
+        Booking booking = new Booking();
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Bookings WHERE bookingID = ? AND status = 'booked';");
+        while (true) {
+            // Ask user for booking ID
+            System.out.println("Please enter the booking ID : ");
+            bookingID = scanner.nextInt();
+            scanner.nextLine();
+
+            // Check if booking ID exists in the database
+            stmt.setInt(1, bookingID);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                booking.setBookingID(rs.getInt("bookingID"));
+                booking.setListingID(rs.getInt("listingID"));
+                booking.setUserID(rs.getString("userID"));
+                booking.setStatus(rs.getString("status"));
+                booking.setPrice(rs.getFloat("price"));
+                booking.setStartDate(rs.getDate("startDate").toLocalDate());
+                booking.setEndDate(rs.getDate("endDate").toLocalDate());
+                break;
+            } else {
+                System.out.println("The booking ID you entered is invalid. Please try again.");
+            }
+        }
+
+        // There should be no way that a renter is also the host of a listing (handled in booking)
+        // Check if user is a host
+        String userType = "";
+        stmt = conn.prepareStatement("SELECT * FROM Listings WHERE hostID = ? AND listingID = (SELECT listingID FROM bookings WHERE bookingID = ?);");
+        stmt.setString(1, username);
+        stmt.setInt(2, booking.bookingID);
+        ResultSet rs = stmt.executeQuery();
+
+        if (rs.next()) {
+            userType = "host";
+            System.out.println("You are the host of the booking with ID: " + booking.bookingID);
+        }
+
+        // Check if user is a renter
+        stmt = conn.prepareStatement("SELECT * FROM Bookings WHERE userID = ? AND bookingID = ? AND status = 'booked';");
+        stmt.setString(1, username);
+        stmt.setInt(2, booking.bookingID);
+        rs = stmt.executeQuery();
+
+        if (rs.next()) {
+            userType = "renter";
+            System.out.println("You are a renter of the booking with ID: " + booking.bookingID);
+        }
+
+        if (userType.equals("")) {
+            System.out.println("You are neither the host nor the renter of the booking with ID: " + booking.bookingID);
+            printBackToMainMenu();
+            return;
+        }
+
+        // Ask user if they would like to cancel the booking
+        System.out.println("Are you sure you would like to cancel the booking with ID: " + booking.bookingID + "? (y/n)");
+        String answer = scanner.nextLine();
+
+        if (answer.equals("y") || answer.equals("Y")) {
+            // Update the booking status to cancelled
+            stmt = conn.prepareStatement("UPDATE Bookings SET status = 'cancelled', statusReason = ? WHERE bookingID = ?;");
+            stmt.setString(1, userType);
+            stmt.setInt(2, booking.bookingID);
+            stmt.execute();
+
+            System.out.println("The booking with ID: " + booking.bookingID + " has been cancelled.");
+        }
+
 
         printBackToMainMenu();
     }
@@ -853,6 +921,9 @@ public class Main {
 
     // Reports
     private static void handleOption9(Scanner scanner, Connection conn) {
+
+        //TODO: Make a sync function that updates all the booked listings to finished if today's date is past the end date
+
         System.out.println("\n\n");
         printBackToMainMenu();
     }
@@ -930,7 +1001,9 @@ public class Main {
         return amenities;
     }
 
-    private static int getListingId(String username, String listingType, String address, String country, String city, String postalCode, float price, float longitude, float latitude, String amenities, Connection conn) throws SQLException {
+    private static int getListingId(String username, String listingType, String address, String country, String
+            city, String postalCode, float price, float longitude, float latitude, String amenities, Connection conn) throws
+            SQLException {
         int listingID = 0;
 
         PreparedStatement stmt = conn.prepareStatement("SELECT listingID FROM Listings WHERE hostID = ? AND listingType = ? AND address = ? AND country = ? AND city = ? AND postalCode = ? AND price = ? AND longitude = ? AND latitude = ? AND amenities = ?;");
@@ -954,7 +1027,8 @@ public class Main {
         return listingID;
     }
 
-    public static boolean checkOverlapUnavailable(Connection conn, LocalDate startDate, LocalDate endDate, int listingID) throws SQLException {
+    public static boolean checkOverlapUnavailable(Connection conn, LocalDate startDate, LocalDate endDate,
+                                                  int listingID) throws SQLException {
         // Given a start date and end date, check if there are any bookings that overlap with the given dates
         PreparedStatement stmt = conn.prepareStatement("SELECT * from Bookings WHERE listingID = ? " +
                 "AND (status = 'unavailable' OR status = 'booked') AND (startDate <= ? AND endDate >= ?) ORDER BY startDate;");
@@ -1101,7 +1175,8 @@ public class Main {
         stmt.close();
     }
 
-    private static void storeListings(Connection conn, ResultSet rs, ArrayList<Listing> listings) throws SQLException {
+    private static void storeListings(Connection conn, ResultSet rs, ArrayList<Listing> listings) throws
+            SQLException {
         while (rs.next()) {
             Listing listing = new Listing(rs.getString("hostID"),
                     rs.getString("listingType"), rs.getString("address"),

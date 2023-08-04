@@ -34,6 +34,16 @@ public class Booking {
         this.price = price;
     }
 
+    public void setListingID(int listingID) {this.listingID = listingID;}
+
+    public void setUserID(String userID) {this.userID = userID;}
+
+    public void setStatus(String status) {this.status = status;}
+
+    public void setStartDate(LocalDate startDate) {this.startDate = startDate;}
+
+    public void setEndDate(LocalDate endDate) {this.endDate = endDate;}
+
     public String validateData(){
         // If any of the fields are empty, return false
         if (userID.equals("") || status.equals("") || startDate == null || endDate ==null){
