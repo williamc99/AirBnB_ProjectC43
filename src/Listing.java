@@ -104,4 +104,6 @@ public class Listing {
     public float getDistance() {
         return this.distance;
     }
+
+    public float getPrice() { return this.price; }
 }

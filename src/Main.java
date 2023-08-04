@@ -230,7 +230,7 @@ public class Main {
 
             if (orderChoice == 1) {
                 sql += " ORDER BY distance;";
-            } else{
+            } else {
                 sql += " ORDER BY ?;";
             }
 
@@ -242,7 +242,7 @@ public class Main {
 
             if (orderChoice == 2) {
                 stmt.setString(5, "price");
-            } else if (orderChoice == 3){
+            } else if (orderChoice == 3) {
                 stmt.setString(5, "price DESC");
             }
             ResultSet rs = stmt.executeQuery();
@@ -446,9 +446,26 @@ public class Main {
 
         // Choosing and booking a listing
         System.out.print("\n\n");
-        System.out.println("Enter the listing ID of the listing you would like to book: ");
-        int chosenID = scanner.nextInt();
-        scanner.nextLine();
+        boolean exit = false;
+        int chosenID = 0;
+        Listing chosenListing = new Listing();
+        while (!exit) {
+            System.out.println("Enter the listing ID of the listing you would like to book: ");
+            chosenID = scanner.nextInt();
+            scanner.nextLine();
+
+            // Check if any of the listings correspond to the chosen ID
+            for (Listing listing : listings) {
+                if (listing.listingID == chosenID) {
+                    chosenListing = listing;
+                    exit = true;
+                    break;
+                }
+            }
+            if (!exit){
+                System.out.println("The listing ID you entered is invalid. Please try again.");
+            }
+        }
 
         // Ask user for username
         System.out.println("Please enter your username: ");
@@ -458,22 +475,49 @@ public class Main {
             printBackToMainMenu();
             return;
         }
-
         // Check if user has a credit card on file
         checkCreditCard(scanner, conn, username);
 
+        // Get rental dates from user
+        exit = false;
+        String startDate = "";
+        String endDate = "";
 
-        // Make sure that the user books one day or a row of days
-        // If not, ask them to enter a credit card and update in database
-        // Ask user for information, time, etc.
+        while (!exit) {
+            System.out.print("Enter a rental start date (YYYY-MM-DD): ");
+            startDate = scanner.nextLine();
+            System.out.print("Enter a rental end date (YYYY-MM-DD): ");
+            endDate = scanner.nextLine();
+
+            // Check if the date range has already been booked
+            if (!checkOverlapUnavailable(conn, LocalDate.parse(startDate), LocalDate.parse(endDate), chosenID)) {
+                exit = true;
+            }
+        }
+
         // Create a new booking object
-        // Push the new booking to the database
+        Booking newBooking = new Booking(chosenID, username, "booked", LocalDate.parse(startDate), LocalDate.parse(endDate));
+        newBooking.setPrice(chosenListing.getPrice());
+        String validation = newBooking.validateData();
+        if (!validation.equals("pass")) {
+            System.out.println(validation);
+            printBackToMainMenu();
+            return;
+        }
 
-        // Ask if the user wants to book another listing
-        System.out.println("Would you like to book another listing? (Y/N)");
-        answer = scanner.nextLine();
-        // While loop the entire function
+        //Push the new booking to the database
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Bookings VALUES(default, ?, ?, ?, NULL, ?, ?, ?)");
+        stmt.setInt(1, newBooking.listingID);
+        stmt.setString(2, newBooking.userID);
+        stmt.setString(3, newBooking.status);
+        stmt.setFloat(4, newBooking.price);
+        stmt.setDate(5, Date.valueOf(newBooking.startDate));
+        stmt.setDate(6, Date.valueOf(newBooking.endDate));
+        stmt.execute();
 
+        System.out.println("You have successfully booked listing with ID: " + chosenID + " from " + startDate + " to " + endDate + "\n");
+
+        stmt.close();
         printBackToMainMenu();
     }
 
@@ -867,9 +911,9 @@ public class Main {
                 int amenityID = rs.getInt("amenityID");
                 //Concat amenityID and a comma to the string
                 amenities = amenities.concat(String.valueOf(amenityID) + ",");
-                System.out.println("Amenity " + amenity + " added successfully!");
+                System.out.println("Amenity: " + amenity + " added successfully!");
             } else {
-                System.out.println("Amenity does not exist. Please try again.");
+                System.out.println("Amenity: " + amenity + "does not exist. Please try again.");
                 continue;
             }
 
@@ -913,7 +957,7 @@ public class Main {
     public static boolean checkOverlapUnavailable(Connection conn, LocalDate startDate, LocalDate endDate, int listingID) throws SQLException {
         // Given a start date and end date, check if there are any bookings that overlap with the given dates
         PreparedStatement stmt = conn.prepareStatement("SELECT * from Bookings WHERE listingID = ? " +
-                "AND status = 'unavailable' AND startDate <= ? AND endDate >= ?;");
+                "AND (status = 'unavailable' OR status = 'booked') AND (startDate <= ? AND endDate >= ?) ORDER BY startDate;");
         stmt.setInt(1, listingID);
         stmt.setDate(2, Date.valueOf(endDate));
         stmt.setDate(3, Date.valueOf(startDate));
@@ -923,7 +967,7 @@ public class Main {
         if (rs.isBeforeFirst()) {
             System.out.println("There is a booking that overlaps with the given dates. ");
             System.out.println("Please consider the existing unavailable dates and try again: ");
-            while (rs.next()){
+            while (rs.next()) {
                 System.out.println("Unavailable from " + rs.getDate("startDate") + " to " + rs.getDate("endDate"));
             }
             System.out.println("\n");
