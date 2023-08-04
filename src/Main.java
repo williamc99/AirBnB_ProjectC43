@@ -968,7 +968,7 @@ public class Main {
             System.out.println("There is a booking that overlaps with the given dates. ");
             System.out.println("Please consider the existing unavailable dates and try again: ");
             while (rs.next()) {
-                System.out.println("Unavailable from " + rs.getDate("startDate") + " to " + rs.getDate("endDate"));
+                System.out.println(rs.getString("status") + " from " + rs.getDate("startDate") + " to " + rs.getDate("endDate"));
             }
             System.out.println("\n");
             rs.close();
