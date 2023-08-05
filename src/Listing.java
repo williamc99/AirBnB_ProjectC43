@@ -32,12 +32,6 @@ public class Listing {
         this.amenities = amenities;
     }
 
-
-    public String sqlInsertString(){
-        return "('" + hostID + "', '" + listingType + "', '" + address + "', '" + country + "', '" + city + "', '"
-                + postalCode + "', '" + price + "', '" + longitude + "', '" + latitude + "', '" + amenities + "');";
-    }
-
     public String validateData(){
         // If any of the fields are empty, return false
         if (hostID.equals("") || listingType.equals("") || address.equals("") || country.equals("") || city.equals("")

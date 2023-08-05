@@ -39,9 +39,10 @@ public class Main {
                 System.out.println("4. Create a new listing");
                 System.out.println("5. Remove a listing");
                 System.out.println("6. Edit a listing");
-                System.out.println("7. Write a review");
+                System.out.println("7. Reviews");
                 System.out.println("8. Delete a user");
-                System.out.println("9. Reports");
+                System.out.println("9. User History");
+                System.out.println("10. Reports");
                 System.out.println("0. Exit the application\n");
 
                 // Get user input
@@ -50,7 +51,7 @@ public class Main {
                 scanner.nextLine();
 
                 // Make sure that the user input is an integer and is within the range of the menu
-                if (choice < 0 || choice > 8) {
+                if (choice < 0 || choice > 10) {
                     System.out.println("Invalid choice. Please try again.");
                     continue;
                 }
@@ -66,6 +67,7 @@ public class Main {
                     case 7 -> handleOption7(scanner, conn);
                     case 8 -> handleOption8(scanner, conn);
                     case 9 -> handleOption9(scanner, conn);
+                    case 10 -> handleOption10(scanner, conn);
                     case 0 -> {
                         System.out.println("Exiting the application...");
                         exit = true;
@@ -115,7 +117,7 @@ public class Main {
         String ssn = scanner.nextLine();
 
         System.out.println("Please enter your credit card number (no dashes) [optional]: ");
-        String creditCard = scanner.nextLine();
+            String creditCard = scanner.nextLine();
 
         System.out.println("Please enter your birth date (YYYY-MM-DD): ");
         String birthDate = scanner.nextLine();
@@ -731,7 +733,7 @@ public class Main {
                 System.out.println("The date range: " + startDate + " to " + endDate +
                         " has been set to unavailable for listing with ID: " + listingID + "\n");
 
-                System.out.println("Would you like to add another availability? (y/n): ");
+                System.out.println("Would you like to add another unavailability? (y/n): ");
                 String choice = scanner.nextLine();
                 if (choice.equals("n")) {
                     exit = true;
@@ -760,11 +762,12 @@ public class Main {
 
         // Ask user for listing ID
         System.out.println("Please enter the listing ID you would like to remove: ");
-        String listingID = scanner.nextLine();
+        int listingID = scanner.nextInt();
+        scanner.nextLine();
 
         // Check if listing exists and user is the owner of listing
         PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Listings WHERE listingID = ? AND hostID = ?;");
-        stmt.setString(1, listingID);
+        stmt.setInt(1, listingID);
         stmt.setString(2, username);
         ResultSet rs = stmt.executeQuery();
 
@@ -781,7 +784,7 @@ public class Main {
         if (answer.equals("y") || answer.equals("Y")) {
             // Delete the listing
             stmt = conn.prepareStatement("DELETE FROM Listings WHERE listingID = ?;");
-            stmt.setString(1, listingID);
+            stmt.setInt(1, listingID);
             stmt.execute();
 
             System.out.println("The listing with ID: " + listingID + " has been removed.");
@@ -793,38 +796,145 @@ public class Main {
     }
 
     // Edit a listing
-    private static void handleOption6(Scanner scanner, Connection conn) {
+    private static void handleOption6(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
-
-
+        
         // Ask user for listing ID
         System.out.println("Please enter the listing ID: ");
-        String listingID = scanner.nextLine();
+        int listingID = scanner.nextInt();
+        scanner.nextLine();
         // Check if listing ID exists in the database
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Listings WHERE listingID = ?;");
+        stmt.setInt(1, listingID);
+        ResultSet rs = stmt.executeQuery();
+
+        if (!rs.next()){
+            System.out.println("The listing ID you entered is invalid. Please try again.");
+            printBackToMainMenu();
+            return;
+        }
 
         // Ask user for username
         System.out.println("Please enter your username: ");
         String username = scanner.nextLine();
-        // Through the username, you will find out whether the user is renter or host
-        // If they are not the host, they cannot edit the listing
 
-        System.out.println("Would you like to (1) update price or (2) update availability?");
+        if (loginUser(scanner, conn, username)) {
+            printBackToMainMenu();
+            return;
+        }
+
+        // Check if user is the owner of the listing
+        Listing listing = new Listing();
+        stmt = conn.prepareStatement("SELECT * FROM Listings WHERE listingID = ? AND hostID = ?;");
+        stmt.setInt(1, listingID);
+        stmt.setString(2, username);
+        rs = stmt.executeQuery();
+
+        if (!rs.next()){
+            System.out.println("You are not the host of the listing with ID: " + listingID + ". Please try again.");
+            printBackToMainMenu();
+            return;
+        }
+
+        // Ask user what they would like to update
+        System.out.println("What would you like to edit?:");
+        System.out.println("1. Update Price of Listing");
+        System.out.println("2. Add Unavailability Dates to Listing");
+        System.out.println("0. Return to main menu");
         System.out.print("Enter your choice: ");
         int choice = scanner.nextInt();
         scanner.nextLine();
 
-        // If 1, ask for when you want the price change to take effect
-        // Ask for the new price
-        // Ask for when you want this price to take effect
-        // Make sure that the date entered is not already booked
-        // Update the price in the database
+        if (choice < 0 || choice > 2) {
+            System.out.println("Invalid choice. Please try again.");
+            printBackToMainMenu();
+            return;
+        }
 
-        // If 2, ask for when you want the availability change to take effect
-        // Make sure that the date entered is not already booked (if it is, tell host to cancel booking first)
-        // Ask for the new availability
-        // Update the availability in the database
+        // Update Price
+        if (choice == 1){
+            // Ask user for new price
+            System.out.println("The current price of the listing is: $" + String.format("%.2f", rs.getFloat("price")));
+            System.out.println("Please enter a new price: ");
+            float newPrice = scanner.nextFloat();
+            scanner.nextLine();
 
+            // Check that price entered is valid
+            if (newPrice <= 0) {
+                System.out.println("Invalid price. Please try again.");
+                printBackToMainMenu();
+                return;
+            }
 
+            // Ask user for when they want the price change to take effect
+            System.out.println("Please enter the date you want the price change to take effect (YYYY-MM-DD): ");
+            System.out.println("(Please note that the price change will take effect 7 days after the date entered)");
+            String date = scanner.nextLine();
+
+            // Make a new date that is 7 days after the date entered
+            LocalDate newDate = LocalDate.parse(date).plusDays(7);
+
+            // Update the price in the database
+            stmt = conn.prepareStatement("UPDATE Listings SET price = ? WHERE listingID = ?;");
+            stmt.setFloat(1, newPrice);
+            stmt.setInt(2, listingID);
+            stmt.execute();
+            System.out.println("The price of the listing with ID: " + listingID + " has been updated to: $" + String.format("%.2f",newPrice));
+
+            // Update the price of all bookings
+            stmt = conn.prepareStatement("UPDATE Bookings SET price = ? WHERE listingID = ? AND status = 'booked' AND startDate > ?;");
+            stmt.setFloat(1, newPrice);
+            stmt.setInt(2, listingID);
+            stmt.setDate(3, Date.valueOf(newDate));
+            stmt.execute();
+            System.out.println("The price of all bookings for the listing with ID: " + listingID + " has been updated to: $" + String.format("%.2f",newPrice));
+        }
+        // Update Availability
+        else if (choice == 2){
+            boolean exit = false;
+            while (!exit) {
+                System.out.print("Enter the unavailability start date (YYYY-MM-DD): ");
+                String startDate = scanner.nextLine();
+                System.out.print("Enter the unavailability end date (YYYY-MM-DD): ");
+                String endDate = scanner.nextLine();
+
+                // Check if the date range has already been set to unavailable
+                if (checkOverlapUnavailable(conn, LocalDate.parse(startDate), LocalDate.parse(endDate), listingID)) {
+                    continue;
+                }
+
+                // Create a new booking object
+                Booking newBooking = new Booking(listingID, username, "unavailable", LocalDate.parse(startDate), LocalDate.parse(endDate));
+                String validation = newBooking.validateData();
+                if (!validation.equals("pass")) {
+                    System.out.println(validation);
+                    printBackToMainMenu();
+                    return;
+                }
+
+                //Push the new booking to the database
+                stmt = conn.prepareStatement("INSERT INTO Bookings VALUES(default, ?, ?, ?, NULL, NULL, ?, ?)");
+                stmt.setInt(1, newBooking.listingID);
+                stmt.setString(2, newBooking.userID);
+                stmt.setString(3, newBooking.status);
+                stmt.setDate(4, Date.valueOf(newBooking.startDate));
+                stmt.setDate(5, Date.valueOf(newBooking.endDate));
+                stmt.execute();
+
+                System.out.println("The date range: " + startDate + " to " + endDate +
+                        " has been set to unavailable for listing with ID: " + listingID + "\n");
+
+                System.out.println("Would you like to add another unavailability? (y/n): ");
+                String answer = scanner.nextLine();
+                if (answer.equals("n")) {
+                    exit = true;
+                }
+                System.out.println("\n");
+            }
+        }
+
+        rs.close();
+        stmt.close();
         printBackToMainMenu();
     }
 
@@ -833,6 +943,7 @@ public class Main {
     private static void handleOption7(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
 
+        //TODO: Add functionality to view reviews as well
 
         System.out.println("What type of review would you like to write?");
         System.out.println("1. Write a review for a listing");
@@ -852,7 +963,8 @@ public class Main {
         // If 1, write review for listing/host as renter
         if (choice == 1) {
             System.out.println("Please enter the listing ID: ");
-            String listingID = scanner.nextLine();
+            int listingID = scanner.nextInt();
+            scanner.nextLine();
             // Check if listing ID exists in the database
 
             // Ask user for username
@@ -942,11 +1054,17 @@ public class Main {
 
     }
 
-    // Reports
+    // User History
     private static void handleOption9(Scanner scanner, Connection conn) {
 
         //TODO: Make a sync function that updates all the booked listings to finished if today's date is past the end date
 
+        System.out.println("\n\n");
+        printBackToMainMenu();
+    }
+
+    // Reports
+    private static void handleOption10(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
         printBackToMainMenu();
     }
@@ -1062,7 +1180,7 @@ public class Main {
 
         // If there is a booking that overlaps, return true
         if (rs.isBeforeFirst()) {
-            System.out.println("There is a booking that overlaps with the given dates. ");
+            System.out.println("There is a booking that overlaps with the given dates.\n");
             System.out.println("Please consider the existing unavailable dates and try again: ");
             while (rs.next()) {
                 System.out.println(rs.getString("status") + " from " + rs.getDate("startDate") + " to " + rs.getDate("endDate"));
