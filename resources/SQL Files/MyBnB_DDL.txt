@@ -25,7 +25,7 @@ CREATE TABLE Listings(
     latitude decimal(8, 6) NOT NULL,
     amenities varchar(300),
     PRIMARY KEY (listingID),
-    FOREIGN KEY (hostID) REFERENCES Users(username)
+    FOREIGN KEY (hostID) REFERENCES Users(username) ON DELETE CASCADE
 );
 
 CREATE TABLE Bookings(
@@ -38,8 +38,8 @@ CREATE TABLE Bookings(
     startDate DATE NOT NULL,
     endDate DATE NOT NULL,
     PRIMARY KEY (bookingID),
-    FOREIGN KEY (listingID) REFERENCES Listings(listingID),
-    FOREIGN KEY (userID) REFERENCES Users(username)
+    FOREIGN KEY (listingID) REFERENCES Listings(listingID) ON DELETE CASCADE,
+    FOREIGN KEY (userID) REFERENCES Users(username) ON DELETE CASCADE
 );
 
 CREATE TABLE Reviews(
@@ -54,7 +54,7 @@ CREATE TABLE Reviews(
     PRIMARY KEY (reviewerID, revieweeID),
     FOREIGN KEY (reviewerID) REFERENCES Users(username),
     FOREIGN KEY (revieweeID) REFERENCES Users(username),
-    FOREIGN KEY (listingID) REFERENCES Listings(listingID)
+    FOREIGN KEY (listingID) REFERENCES Listings(listingID) ON DELETE CASCADE
 );
 
 CREATE TABLE Amenities(

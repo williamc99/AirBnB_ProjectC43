@@ -746,26 +746,49 @@ public class Main {
 
 
     // Remove a listing
-    private static void handleOption5(Scanner scanner, Connection conn) {
+    private static void handleOption5(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
-
-
-        // Ask user for listing ID
-        System.out.println("Please enter the listing ID: ");
-        String listingID = scanner.nextLine();
 
         // Ask user for username
         System.out.println("Please enter your username: ");
         String username = scanner.nextLine();
-        // Through the username, you will find out whether the user is renter or host
-        // If user is renter, and they made the booking, they can delete the listing
-        // If user is host, and they own the listing, they can delete the listing
-        // If user is renter, and they did not make the booking, they cannot delete the listing
 
-        // Check if listing ID exists in the database
-        // Make sure that upcoming bookings are cancelled
-        // Delete the listing
+        if (loginUser(scanner, conn, username)) {
+            printBackToMainMenu();
+            return;
+        }
 
+        // Ask user for listing ID
+        System.out.println("Please enter the listing ID you would like to remove: ");
+        String listingID = scanner.nextLine();
+
+        // Check if listing exists and user is the owner of listing
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Listings WHERE listingID = ? AND hostID = ?;");
+        stmt.setString(1, listingID);
+        stmt.setString(2, username);
+        ResultSet rs = stmt.executeQuery();
+
+        if (!rs.next()){
+            System.out.println("You are either not the host of the listing or the listing ID you entered is invalid. Please try again.");
+            printBackToMainMenu();
+            return;
+        }
+
+        // Ask user if they would like to remove the listing
+        System.out.println("Are you sure you would like to remove the listing with ID: " + listingID + "? (y/n)");
+        String answer = scanner.nextLine();
+
+        if (answer.equals("y") || answer.equals("Y")) {
+            // Delete the listing
+            stmt = conn.prepareStatement("DELETE FROM Listings WHERE listingID = ?;");
+            stmt.setString(1, listingID);
+            stmt.execute();
+
+            System.out.println("The listing with ID: " + listingID + " has been removed.");
+        }
+
+        rs.close();
+        stmt.close();
         printBackToMainMenu();
     }
 
