@@ -10,6 +10,8 @@ public class Main {
     private static final String dbClassName = "com.mysql.cj.jdbc.Driver";
     private static final String CONNECTION = "jdbc:mysql://127.0.0.1/projectdb";
 
+    //TODO: Add a trigger event to SQL to update bookings status to "completed" when the current date is past the end date
+
     public static void main(String[] args) throws ClassNotFoundException {
         // Register JDBC driver
         Class.forName(dbClassName);
@@ -397,7 +399,6 @@ public class Main {
             String endDate = scanner.nextLine();
 
             // Filter the listings
-            //TODO: Test this filter
             ArrayList<Listing> listingsToDelete = new ArrayList<>();
             for (Listing listing : listings) {
                 // Queries for listings that are available in the date range
@@ -1238,45 +1239,173 @@ public class Main {
     private static void handleOption8(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
 
-//        List<DistancePair> distancePairs = new ArrayList<>();
-//        Listing l1 = new Listing();
-//        distancePairs.add(new DistancePair(l1, 1.0));
-//        distancePairs.add(new DistancePair(l1, 1.5));
-//        distancePairs.add(new DistancePair(l1, 1.3333));
-//        distancePairs.add(new DistancePair(l1, 1.3334));
-//
-//
-//        distancePairs.sort(new Comparator<DistancePair>() {
-//            @Override
-//            public int compare(DistancePair o1, DistancePair o2) {
-//                return Double.compare(o1.getDistance(), o2.getDistance());
-//            }
-//        });
-//
-//        for (DistancePair d : distancePairs){
-//            System.out.println(d.getListing());
-//            System.out.println(d.getDistance());
-//        }
+        // Ask user for username
+        System.out.println("Please enter your username: ");
+        String username = scanner.nextLine();
 
-//        ArrayList<String> arr = new ArrayList<>();
-//        arr.add("1");
-//        arr.add("2");
-//        arr.add("3");
-//        arr.add("4");
-//
-//        System.out.println(arr);
+        if (loginUser(scanner, conn, username)) {
+            printBackToMainMenu();
+            return;
+        }
 
+        System.out.println("Are you sure you would like to delete your account?");
+        System.out.println("Any related listings, bookings, and reviews will also be deleted.");
+        System.out.println("This action cannot be undone. (y/n)");
+        String answer = scanner.nextLine();
+
+        if (answer.equals("y") || answer.equals("Y")) {
+            // Delete the user
+            PreparedStatement stmt = conn.prepareStatement("DELETE FROM Users WHERE username = ?;");
+            stmt.setString(1, username);
+            stmt.execute();
+
+            System.out.println("The account with username: " + username + " has been successfully deleted.");
+        }
 
         printBackToMainMenu();
-
     }
 
     // User History
-    private static void handleOption9(Scanner scanner, Connection conn) {
-
-        //TODO: Make a sync function that updates all the booked listings to finished if today's date is past the end date
-
+    private static void handleOption9(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
+
+        // Ask user for username
+        System.out.println("Please enter your username: ");
+        String username = scanner.nextLine();
+
+        if (loginUser(scanner, conn, username)) {
+            printBackToMainMenu();
+            return;
+        }
+
+        // Ask user what type of history they would like to view
+        System.out.println("What type of history would you like to view?");
+        System.out.println("1. View all bookings I've made");
+        System.out.println("2. View all my listings");
+        System.out.println("0. Return to main menu\n");
+        System.out.print("Enter your choice: ");
+        int choice = scanner.nextInt();
+        scanner.nextLine();
+
+        // Make sure that the user input is an integer and is within the range of the menu
+        if (choice < 0 || choice > 2) {
+            System.out.println("Invalid choice. Please try again.");
+            printBackToMainMenu();
+            return;
+        }
+
+        // If 1, view all bookings made by user
+        if (choice == 1){
+            // Get all bookings made by user
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Bookings WHERE userID = ? AND " +
+                    "(status = 'booked' OR status = 'cancelled' OR status = 'completed');");
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("You have not made any bookings.");
+                printBackToMainMenu();
+                return;
+            }
+
+            System.out.println("Here are all the bookings you have made: ");
+            System.out.println("--------------------------------------------------");
+            do {
+                System.out.println("Booking ID: " + rs.getInt("bookingID"));
+                System.out.println("Listing ID: " + rs.getInt("listingID"));
+                System.out.println("Renter ID: " + rs.getString("userID"));
+                System.out.println("Status: " + rs.getString("status"));
+                System.out.println("Start Date: " + rs.getDate("startDate"));
+                System.out.println("End Date: " + rs.getDate("endDate"));
+                System.out.println("Price: $" + String.format("%.2f", rs.getFloat("price")));
+                System.out.println("\n");
+            } while (rs.next());
+            System.out.println("--------------------------------------------------\n");
+
+            rs.close();
+            stmt.close();
+        }
+        // If 2, view all the user's listings
+        if (choice == 2){
+            // Get all listings made by user
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Listings WHERE hostID = ?;");
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("You have not created any listings.");
+                printBackToMainMenu();
+                return;
+            }
+
+            System.out.println("Here are all the listings you have created: ");
+            System.out.println("--------------------------------------------------");
+            do {
+                System.out.println("Listing ID: " + rs.getInt("listingID"));
+                System.out.println("Listing Type: " + rs.getString("listingType"));
+                System.out.println("Host ID: " + rs.getString("hostID"));
+                System.out.println("Address: " + rs.getString("address"));
+                System.out.println("Country: " + rs.getString("country"));
+                System.out.println("City: " + rs.getString("city"));
+                System.out.println("Postal Code: " + rs.getString("postalCode"));
+                System.out.println("Price: $" + String.format("%.2f", rs.getFloat("price")));
+                System.out.println("Longitude: " + rs.getFloat("longitude"));
+                System.out.println("Latitude: " + rs.getFloat("latitude"));
+                System.out.println("Amenities: " + getAmenities(conn, rs.getString("amenities")));
+                System.out.println("\n");
+            } while (rs.next());
+            System.out.println("--------------------------------------------------\n");
+
+            System.out.println("Would you like to view the bookings for any of your listings? (y/n)");
+            String answer = scanner.nextLine();
+
+            if (answer.equals("y") || answer.equals("Y")) {
+                System.out.println("Please enter the listing ID: ");
+                int listingID = scanner.nextInt();
+                scanner.nextLine();
+
+                // Check if listing exists and user is the owner of listing
+                stmt = conn.prepareStatement("SELECT * FROM Listings WHERE listingID = ? AND hostID = ?;");
+                stmt.setInt(1, listingID);
+                stmt.setString(2, username);
+                rs = stmt.executeQuery();
+
+                if (!rs.next()){
+                    System.out.println("You are either not the host of the listing or the listing ID you entered is invalid. Please try again.");
+                    printBackToMainMenu();
+                    return;
+                }
+
+                // Get all bookings for the listing
+                stmt = conn.prepareStatement("SELECT * FROM Bookings WHERE listingID = ? AND " +
+                        "(status = 'booked' OR status = 'cancelled' OR status = 'completed');");
+                stmt.setInt(1, listingID);
+                rs = stmt.executeQuery();
+
+                if (!rs.next()){
+                    System.out.println("There were no bookings found for listing with ID: " + listingID);
+                    printBackToMainMenu();
+                    return;
+                }
+
+                System.out.println("Here are all the bookings made for the listing with ID: " + listingID + ": ");
+                System.out.println("--------------------------------------------------");
+                do {
+                    System.out.println("Booking ID: " + rs.getInt("bookingID"));
+                    System.out.println("Listing ID: " + rs.getInt("listingID"));
+                    System.out.println("Renter ID: " + rs.getString("userID"));
+                    System.out.println("Status: " + rs.getString("status"));
+                    System.out.println("Start Date: " + rs.getDate("startDate"));
+                    System.out.println("End Date: " + rs.getDate("endDate"));
+                    System.out.println("Price: $" + String.format("%.2f", rs.getFloat("price")));
+                    System.out.println("\n");
+                } while (rs.next());
+                System.out.println("--------------------------------------------------\n");
+            }
+            rs.close();
+            stmt.close();
+        }
+
         printBackToMainMenu();
     }
 
