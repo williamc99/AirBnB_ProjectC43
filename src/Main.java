@@ -515,6 +515,7 @@ public class Main {
 
         System.out.println("You have successfully booked listing with ID: " + chosenID + " from " + startDate + " to " + endDate + "\n");
 
+
         stmt.close();
         printBackToMainMenu();
     }
@@ -798,7 +799,7 @@ public class Main {
     // Edit a listing
     private static void handleOption6(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
-        
+
         // Ask user for listing ID
         System.out.println("Please enter the listing ID: ");
         int listingID = scanner.nextInt();
@@ -940,21 +941,20 @@ public class Main {
 
 
     // Write a review
-    private static void handleOption7(Scanner scanner, Connection conn) {
+    private static void handleOption7(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
-
-        //TODO: Add functionality to view reviews as well
-
         System.out.println("What type of review would you like to write?");
         System.out.println("1. Write a review for a listing");
         System.out.println("2. Write a review for a renter");
+        System.out.println("3. View all reviews I've written");
+        System.out.println("4. View all reviews about me");
         System.out.println("0. Return to main menu\n");
         System.out.print("Enter your choice: ");
         int choice = scanner.nextInt();
         scanner.nextLine();
 
         // Make sure that the user input is an integer and is within the range of the menu
-        if (choice < 0 || choice > 2) {
+        if (choice < 0 || choice > 4) {
             System.out.println("Invalid choice. Please try again.");
             printBackToMainMenu();
             return;
@@ -966,11 +966,52 @@ public class Main {
             int listingID = scanner.nextInt();
             scanner.nextLine();
             // Check if listing ID exists in the database
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Listings WHERE listingID = ?;");
+            stmt.setInt(1, listingID);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("The listing ID you entered is invalid. Please try again.");
+                printBackToMainMenu();
+                return;
+            }
+
+            String hostID = rs.getString("hostID");
 
             // Ask user for username
             System.out.println("Please enter your username: ");
             String username = scanner.nextLine();
-            //Make sure that the user has booked the listing within the past year
+
+            if (loginUser(scanner, conn, username)) {
+                printBackToMainMenu();
+                return;
+            }
+
+            // Check if user has booked the listing within the past 2 years
+            stmt = conn.prepareStatement("SELECT * FROM Bookings WHERE listingID = ? AND userID = ? AND " +
+                    "status = 'completed' AND endDate > DATE_SUB(CURDATE(), INTERVAL 2 YEAR);");
+            stmt.setInt(1, listingID);
+            stmt.setString(2, username);
+            rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("You have not a history of booking the listing with ID: " + listingID + ", or it's been past 2 years since you rented that listing.");
+                printBackToMainMenu();
+                return;
+            }
+
+            // Check if user has already written a review for the listing
+            stmt = conn.prepareStatement("SELECT * FROM Reviews WHERE listingID = ? AND reviewerID = ?;");
+            stmt.setInt(1, listingID);
+            stmt.setString(2, username);
+            rs = stmt.executeQuery();
+
+            if (rs.next()){
+                System.out.println("You have already written a review for the listing with ID: " + listingID + ".");
+                printBackToMainMenu();
+                return;
+            }
+
 
             // Ask user for listing rating
             System.out.println("Please rate your experience of the home (1-5): ");
@@ -983,11 +1024,39 @@ public class Main {
             scanner.nextLine();
 
             // Ask user for comment
-            System.out.println("Please enter any comments: ");
+            System.out.println("Please enter any comments (max 400 chars.): ");
             String comment = scanner.nextLine();
 
+
             // Create a new review object
+            Review review = new Review();
+            review.setListingID(listingID);
+            review.setReviewerID(username);
+            review.setRevieweeID(hostID);
+            review.setListingRating(listingRating);
+            review.setHostRating(hostRating);
+            review.setComment(comment);
+
+            String validation = review.validateData();
+            if (!validation.equals("pass")) {
+                System.out.println(validation);
+                printBackToMainMenu();
+                return;
+            }
+
             // Push the new review to the database
+            stmt = conn.prepareStatement("INSERT INTO Reviews VALUES(default, ?, ?, ?, ?, ?, ?, NULL)");
+            stmt.setString(1, review.reviewerID);
+            stmt.setString(2, review.revieweeID);
+            stmt.setInt(3, review.listingID);
+            stmt.setString(4, review.comment);
+            stmt.setInt(5, review.hostRating);
+            stmt.setInt(6, review.listingRating);
+            stmt.execute();
+            System.out.println("Your review has been successfully submitted!\n");
+
+            rs.close();
+            stmt.close();
         }
         // If 2, write review for a renter as host
         else if (choice == 2) {
@@ -995,10 +1064,40 @@ public class Main {
             System.out.println("Please enter your username: ");
             String username = scanner.nextLine();
 
+            if (loginUser(scanner, conn, username)) {
+                printBackToMainMenu();
+                return;
+            }
+
             // Ask user for renter username
             System.out.println("Please enter the renter's username: ");
             String renterUsername = scanner.nextLine();
-            // Make sure that the renter has booked a listing from the host before
+
+            // Make sure that the renter has booked a listing from the host before and within the past 2 years
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Bookings WHERE userID = ? AND listingID IN " +
+                    "(SELECT listingID FROM Listings WHERE hostID = ?) AND status = 'completed' AND endDate > DATE_SUB(CURDATE(), INTERVAL 2 YEAR);");
+            stmt.setString(1, renterUsername);
+            stmt.setString(2, username);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("The renter with username: " + renterUsername + " has not booked any of your listings, or it's been 2 years since they last rented from you.");
+                printBackToMainMenu();
+                return;
+            }
+
+            // Check if user has already written a review for the renter
+            stmt = conn.prepareStatement("SELECT * FROM Reviews WHERE reviewerID = ? AND revieweeID = ?;");
+            stmt.setString(1, username);
+            stmt.setString(2, renterUsername);
+            rs = stmt.executeQuery();
+
+            if (rs.next()){
+                System.out.println("You have already written a review for the renter with username: " + renterUsername + ".");
+                printBackToMainMenu();
+                return;
+            }
+
 
             // Ask user for renter rating
             System.out.println("Please rate your experience with the renter (1-5): ");
@@ -1006,13 +1105,131 @@ public class Main {
             scanner.nextLine();
 
             // Ask user for comment
-            System.out.println("Please enter any comments: ");
+            System.out.println("Please enter any comments (max 400 chars.): ");
             String comment = scanner.nextLine();
 
             // Create a new review object
-            // Push the new review to the database
-        }
+            Review review = new Review();
+            review.setReviewerID(username);
+            review.setRevieweeID(renterUsername);
+            review.setRenterRating(renterRating);
+            review.setComment(comment);
 
+            String validation = review.validateData();
+            if (!validation.equals("pass")) {
+                System.out.println(validation);
+                printBackToMainMenu();
+                return;
+            }
+
+            // Push the new review to the database
+            stmt = conn.prepareStatement("INSERT INTO Reviews VALUES(default, ?, ?, NULL, ?, NULL, NULL, ?)");
+            stmt.setString(1, review.reviewerID);
+            stmt.setString(2, review.revieweeID);
+            stmt.setString(3, review.comment);
+            stmt.setInt(4, review.renterRating);
+            stmt.execute();
+            System.out.println("Your review has been successfully submitted!\n");
+
+            rs.close();
+            stmt.close();
+        }
+        // If 3, view all reviews written by user
+        else if (choice == 3) {
+            // Ask user for username
+            System.out.println("Please enter your username: ");
+            String username = scanner.nextLine();
+
+            if (loginUser(scanner, conn, username)) {
+                printBackToMainMenu();
+                return;
+            }
+
+            // Get all reviews written by user
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Reviews WHERE reviewerID = ?;");
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("You have not written any reviews.");
+                printBackToMainMenu();
+                return;
+            }
+
+            System.out.println("Here are all the reviews you have written: ");
+            System.out.println("--------------------------------------------------");
+            do {
+                // If listingID is null, then it is a review for a renter
+                if (rs.getObject("listingID") == null) {
+                    System.out.println("Review ID: " + rs.getInt("reviewID"));
+                    System.out.println("Renter ID: " + rs.getString("revieweeID"));
+                    System.out.println("You rated the renter: " + rs.getInt("renterRating"));
+                    System.out.println("Comments: " + rs.getString("comment"));
+                }
+                // Else, the review was for a host/listing
+                else{
+                    System.out.println("Review ID: " + rs.getInt("reviewID"));
+                    System.out.println("Host ID: " + rs.getString("revieweeID"));
+                    System.out.println("Listing ID: " + rs.getInt("listingID"));
+                    System.out.println("You rated the listing: " + rs.getInt("listingRating"));
+                    System.out.println("You rated the host: " + rs.getInt("hostRating"));
+                    System.out.println("Comments: " + rs.getString("comment"));
+                }
+                System.out.println("\n");
+            } while (rs.next());
+            System.out.println("--------------------------------------------------\n");
+
+            rs.close();
+            stmt.close();
+        }
+        // If 4, view all the reviews written about the user
+        else if (choice == 4) {
+            // Ask user for username
+            System.out.println("Please enter your username: ");
+            String username = scanner.nextLine();
+
+            if (loginUser(scanner, conn, username)) {
+                printBackToMainMenu();
+                return;
+            }
+
+            // Get all reviews written about user
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Reviews WHERE revieweeID = ?;");
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("You have not received any reviews.");
+                printBackToMainMenu();
+                return;
+            }
+
+            System.out.println("Here are all the reviews you have received: ");
+            System.out.println("--------------------------------------------------");
+            do {
+                // If listingID is null, then it is a review from a host
+                if (rs.getObject("listingID") == null) {
+                    System.out.println("Review ID: " + rs.getInt("reviewID"));
+                    System.out.println("Host ID: " + rs.getString("reviewerID"));
+                    System.out.println("Host rated you: " + rs.getInt("renterRating"));
+                    System.out.println("Comments: " + rs.getString("comment"));
+                }
+                // Else, the review was from a renter
+                else{
+                    System.out.println("Review ID: " + rs.getInt("reviewID"));
+                    System.out.println("Renter ID: " + rs.getString("reviewerID"));
+                    System.out.println("Listing ID: " + rs.getInt("listingID"));
+                    System.out.println("Renter rated your listing: " + rs.getInt("listingRating"));
+                    System.out.println("Renter rated you: " + rs.getInt("hostRating"));
+                    System.out.println("Comments: " + rs.getString("comment"));
+                }
+                System.out.println("\n");
+            } while (rs.next());
+            System.out.println("--------------------------------------------------\n");
+
+            rs.close();
+            stmt.close();
+        }
         printBackToMainMenu();
     }
 

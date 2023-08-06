@@ -43,17 +43,17 @@ CREATE TABLE Bookings(
 );
 
 CREATE TABLE Reviews(
+    reviewID int NOT NULL AUTO_INCREMENT,
     reviewerID varchar(16) NOT NULL,
     revieweeID varchar(16) NOT NULL,
-    listingID int NOT NULL,
-    reviewType varchar(7) NOT NULL,
+    listingID int,
     comment varchar(400),
     hostRating int,
     listingRating int,
     renterRating int,
-    PRIMARY KEY (reviewerID, revieweeID),
-    FOREIGN KEY (reviewerID) REFERENCES Users(username),
-    FOREIGN KEY (revieweeID) REFERENCES Users(username),
+    PRIMARY KEY (reviewID),
+    FOREIGN KEY (reviewerID) REFERENCES Users(username) ON DELETE CASCADE,
+    FOREIGN KEY (revieweeID) REFERENCES Users(username) ON DELETE CASCADE,
     FOREIGN KEY (listingID) REFERENCES Listings(listingID) ON DELETE CASCADE
 );
 
