@@ -140,8 +140,16 @@ public class Main {
             return;
         }
         //Push the new user to the database
-        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Users VALUES " + newUser.sqlInsertString());
-        stmt.setDate(1, Date.valueOf(newUser.getBirthDate()));
+        PreparedStatement stmt = conn.prepareStatement("INSERT INTO Users VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        stmt.setString(1, newUser.username);
+        stmt.setString(2, newUser.password);
+        stmt.setString(3, newUser.firstName);
+        stmt.setString(4, newUser.lastName);
+        stmt.setString(5, newUser.address);
+        stmt.setString(6, newUser.occupation);
+        stmt.setString(7, newUser.ssn);
+        stmt.setString(8, newUser.creditCard);
+        stmt.setDate(9, Date.valueOf(newUser.getBirthDate()));
         stmt.execute();
         System.out.println("New user '" + newUser.username + "' created successfully!");
 
@@ -1540,32 +1548,6 @@ public class Main {
         rs.close();
         stmt.close();
         return false;
-    }
-
-    private static float calculateDistance(float startLongitude, float startLatitude, float targetLongitude,
-                                           float targetLatitude, int radius) {
-        //TODO: Remove this function
-
-        // Given two longitude/latitude pairs, check if the target is within the radius of the start
-        double AVERAGE_RADIUS_OF_EARTH = 6371;
-        double latDistance = Math.toRadians(startLatitude - targetLatitude);
-        double lngDistance = Math.toRadians(startLongitude - targetLongitude);
-
-        double a = (Math.sin(latDistance / 2) * Math.sin(latDistance / 2)) +
-                (Math.cos(Math.toRadians(startLatitude))) *
-                        (Math.cos(Math.toRadians(targetLatitude))) *
-                        (Math.sin(lngDistance / 2)) *
-                        (Math.sin(lngDistance / 2));
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        float distance = (float) (AVERAGE_RADIUS_OF_EARTH * c);
-
-        if (distance > radius) {
-            return -1;
-        }
-
-        return distance;
     }
 
     private static void displayListing(Listing listing) {

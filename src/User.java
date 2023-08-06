@@ -28,11 +28,6 @@ public class User {
         this.birthDate = LocalDate.parse(birthDate);
     }
 
-    public String sqlInsertString(){
-        return "('" + username + "', '" + password + "', '" + firstName + "', '" + lastName + "', '" + address + "', '"
-                + occupation + "', '" + ssn + "', '" + creditCard + "', ?);";
-    }
-
     public String validateData(){
         // If any of the fields are empty, return false
         if (username.equals("") || password.equals("") || firstName.equals("") || lastName.equals("") || address.equals("")
@@ -51,6 +46,5 @@ public class User {
     public LocalDate getBirthDate() {
         return birthDate;
     }
-
 
 }
