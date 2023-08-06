@@ -663,7 +663,7 @@ public class Main {
 
         // Ask user for price
         // Run the function to estimate a price
-        System.out.println("Based on the inputted information, we recommend this price: $" + newListing.estimatePrice());
+        System.out.println("Based on the inputted information, we recommend this price: $" + String.format("%.2f", newListing.estimatePrice()));
         System.out.println("Please enter your desired price per night: ");
         float price = scanner.nextFloat();
         scanner.nextLine();
