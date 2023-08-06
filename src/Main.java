@@ -665,6 +665,23 @@ public class Main {
 
         //Ask user for amenities
         String amenities = recordAmenities(scanner, conn);
+        // Suggest some amenities for the user to add
+        String amenities2 = recommendAmenities(scanner, conn, amenities);
+
+        // If amenities is not blank, concat to amenities
+        if (!amenities2.isBlank()) {
+            // Make sure last character of amenities is not a comma
+            if (amenities.charAt(amenities.length() - 1) == ',') {
+                amenities += amenities2;
+            } else {
+                amenities += "," + amenities2;
+            }
+        }
+
+        // Make sure last character of amenities is not a comma
+        if (amenities.charAt(amenities.length() - 1) == ',') {
+            amenities = amenities.substring(0, amenities.length() - 1);
+        }
 
         // Create a new listing object
         Listing newListing = new Listing(username, listingType, address, country, city, postalCode, 0, longitude, latitude, amenities);
@@ -1420,6 +1437,18 @@ public class Main {
     // Reports
     private static void handleOption10(Scanner scanner, Connection conn) {
         System.out.println("\n\n");
+
+        // Ask the user what type of report they want to run
+        System.out.println("What type of report would you like to run?");
+        System.out.println("1. Total number of bookings in date range by city/postal code");
+        System.out.println("2. Total number of listings per country/city/postal code");
+        System.out.println("3. Rank hosts by total number of listings per country/city");
+        System.out.println("4. Identify possible commercial hosts");
+        System.out.println("5. Rank renters by number of bookings in specific time period");
+        System.out.println("6. Hosters and renters with largest number of cancellations within a year");
+        System.out.println("7. Most popular noun phrases per listing");
+
+
         printBackToMainMenu();
     }
 
@@ -1494,6 +1523,56 @@ public class Main {
         stmt.close();
 
         return amenities;
+    }
+
+    public static String recommendAmenities(Scanner scanner, Connection conn, String originalAmenities) throws SQLException {
+        String newAmenities = "";
+
+        String sql = "SELECT * FROM Amenities WHERE amenityID NOT IN (";
+        // Split the string into array of strings, and convert each string to int and store in an int array
+        String[] amenities = originalAmenities.split(",");
+        int[] amenityIDs = new int[amenities.length];
+
+        for (int i = 0; i < amenities.length; i++) {
+            amenityIDs[i] = Integer.parseInt(amenities[i]);
+        }
+
+        // Concat the string with the amenityIDs
+        for (int i = 0; i < amenityIDs.length; i++) {
+            sql = sql.concat(String.valueOf(amenityIDs[i]));
+            if (i != amenityIDs.length - 1) {
+                sql = sql.concat(",");
+            }
+        }
+        sql = sql.concat(") LIMIT 5;");
+
+        // Get all the amenities that are not in the original string
+        PreparedStatement stmt = conn.prepareStatement(sql);
+        ResultSet rs = stmt.executeQuery();
+
+        // Concat the amenities to the string
+        if (rs.next()){
+            String amenityList = "";
+            do {
+                amenityList = amenityList.concat(String.valueOf(rs.getInt("amenityID")) + ",");
+            } while (rs.next());
+
+            System.out.println("We recommend these amenities to add to your listing: ");
+            System.out.println(getAmenities(conn, amenityList));
+            System.out.println("Would you like to add new amenities? (y/n)");
+            String answer = scanner.nextLine();
+
+            if (answer.equals("y") || answer.equals("Y")){
+                newAmenities = recordAmenities(scanner, conn);
+            }
+        }
+        else{
+            System.out.println("There are no amenities to recommend.");
+        }
+
+        rs.close();
+        stmt.close();
+        return newAmenities;
     }
 
     private static int getListingId(String username, String listingType, String address, String country, String
