@@ -777,6 +777,7 @@ public class Main {
                 }
                 System.out.println("\n");
             }
+            System.out.println("Listing successfully created!");
             stmt.close();
         }
         // Return to main menu
