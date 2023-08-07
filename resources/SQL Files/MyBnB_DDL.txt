@@ -67,11 +67,5 @@ CREATE TABLE Reviews(
 
 CREATE TABLE Amenities(
     amenityID int PRIMARY KEY NOT NULL,
-    amenityName varchar(20) NOT NULL
+    amenityName varchar(26) NOT NULL
 );
-
-INSERT into Users VALUES ('swaawilliam', '123', 'William', 'Slicer', '123 Street', 'Student', '123456789', 'creditCardnum', '1992-02-13');
-INSERT into Listings VALUES (default, 'swaawilliam', 'House', '100 Addy', 'Canada', 'Toronto', 'M1P 2S2', 400.00, 23.000000, 42.000000, "1,");
-INSERT into Listings VALUES (default, 'swaawilliam', 'Apartment', '200 Addy', 'Canada', 'Scarborough', 'M4S 3R3', 200.00, 12.000000, 32.000000, "1,");
-INSERT into Days VALUES (default, 4, NULL, 'available', 2022-12-13, 2022-12-26);
-INSERT into Amenities VALUES (1, 'Pool');

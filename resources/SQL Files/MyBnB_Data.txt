@@ -1,0 +1,92 @@
+INSERT into Users VALUES ('swaawilliam', '123', 'William', 'Chiu', '123 Street', 'Student', '123456789', '1234567812345678', '2002-12-13');
+INSERT into Users VALUES ('avidrenter', '123', 'Chris', 'Teagen', '321 Street', 'Office Worker', '213445678', '1234567812345678', '1992-05-13');
+INSERT into Users VALUES ('superhostman', '123', 'Clark', 'Kent', '132 Street', 'Journalist', '321456789', '1234567812345678', '1985-12-13');
+INSERT into Users VALUES ('bigcat', '123', 'Big', 'Cat', '192 Street', 'Student', '456123789', '1234567812345678', '2001-12-13');
+INSERT into Users VALUES ('hummusking', '123', 'Hummus', 'King', '82 Street', 'Firefighter', '981283212', '1234567812345678', '1993-12-13');
+
+
+
+
+INSERT into Listings VALUES (1, 'swaawilliam', 'House', '100 Addy', 'Canada', 'Toronto', 'M1P 2S2', 400.00, 23.000000, 42.000000, '1,2,3');
+INSERT into Listings VALUES (2, 'swaawilliam', 'Apartment', '200 Addy', 'Canada', 'Toronto', 'M1P 2R2', 450.00, 22.000000, 32.000000, '7,8,21,22');
+INSERT into Listings VALUES (3, 'superhostman', 'Apartment', '3 SHM Road', 'Canada', 'Toronto', 'M1P 5R3', 200.00, 40.000000, 41.000000, '2,3,7,13');
+INSERT into Listings VALUES (4, 'superhostman', 'Guesthouse', '4 SHM Road', 'Canada', 'Toronto', 'M1P 5R4', 200.00, 40.000000, 42.000000, '1,3,4');
+INSERT into Listings VALUES (5, 'superhostman', 'Apartment', '5 Toronto Condo', 'Canada', 'Toronto', 'M1P 5R5', 250.00, 40.000000, 44.000000, '13,14');
+INSERT into Listings VALUES (6, 'superhostman', 'Apartment', '5 Toronto Condo', 'Canada', 'Toronto', 'M1P 5R5', 250.00, 40.000000, 44.000000, '13,14');
+INSERT into Listings VALUES (7, 'superhostman', 'Hotel', '7 SHM Road', 'Canada', 'Toronto', 'M1P 5R6', 500.00, 40.000000, 45.000000, '1,2,3,4,5,6,7,8');
+INSERT into Listings VALUES (8, 'bigcat', 'Guesthouse', '12 Some Road', 'Japan', 'Tokyo', 'S1R 4R4', 275.00, 90.000000, 95.000000, '3,6,7');
+INSERT into Listings VALUES (9, 'hummusking', 'House', '234 Ramen Road', 'Japan', 'Tokyo', 'S1R 4R4', 275.00, 90.000000, 96.000000, '3,6,7');
+INSERT into Listings VALUES (10, 'hummusking', 'Guesthouse', '300 Read Road', 'Canada', 'Vancouver', 'M5S 5R4', 150.00, 60.000000, 42.000000, '1,3,4,5');
+INSERT into Listings VALUES (11, 'hummusking', 'Guesthouse', '400 Read Road', 'Canada', 'Vancouver', 'M5S 5R6', 150.00, 60.000000, 43.000000, '1,3,4,5,6');
+
+
+
+
+INSERT into Bookings VALUES (1, 1,'avidrenter', 'booked', NULL, 400, '2023-09-09', '2023-09-15');
+INSERT into Bookings VALUES (2, 1,'avidrenter', 'completed', NULL, 400, '2022-09-09', '2022-09-15');
+INSERT into Bookings VALUES (3, 1,'bigcat', 'booked', NULL, 400, '2023-10-09', '2023-10-15');
+INSERT into Bookings VALUES (4, 1,'hummusking', 'cancelled', 'renter', 400, '2023-09-09', '2023-09-15');
+INSERT into Bookings VALUES (5, 1,'hummusking', 'cancelled', 'renter', 400, '2022-05-09', '2022-05-15');
+INSERT into Bookings VALUES (6, 1,'hummusking', 'cancelled', 'renter', 400, '2022-09-09', '2023-09-15');
+INSERT into Bookings VALUES (7, 1,'hummusking', 'cancelled', 'renter', 400, '2023-10-09', '2023-10-15');
+INSERT into Bookings VALUES (8, 1,'hummusking', 'cancelled', 'renter', 400, '2023-09-09', '2023-09-15');
+INSERT into Bookings VALUES (9, 1,'swaawilliam', 'unavailable', NULL, NULL, '2023-12-02', '2023-12-05');
+
+INSERT into Bookings VALUES (10, 2,'avidrenter', 'booked', NULL, 450, '2024-01-01', '2024-01-03');
+INSERT into Bookings VALUES (11, 2,'avidrenter', 'booked', NULL, 450, '2024-01-06', '2024-01-08');
+
+INSERT into Bookings VALUES (12, 3,'avidrenter', 'booked', NULL, 200, '2024-02-01', '2024-02-03');
+INSERT into Bookings VALUES (13, 4,'avidrenter', 'cancelled', 'renter', 200, '2024-02-05', '2024-02-07');
+INSERT into Bookings VALUES (14, 4,'avidrenter', 'booked', NULL, 200, '2024-02-10', '2024-02-13');
+INSERT into Bookings VALUES (15, 5,'bigcat', 'booked', NULL, 250, '2024-02-15', '2024-02-17');
+INSERT into Bookings VALUES (16, 5,'swaawilliam', 'booked', NULL, 250, '2024-02-20', '2024-02-22');
+INSERT into Bookings VALUES (17, 5,'swaawilliam', 'booked', NULL, 250, '2024-02-23', '2024-02-24');
+INSERT into Bookings VALUES (18, 5,'hummusking', 'cancelled', 'host', 250, '2024-02-23', '2024-02-24');
+INSERT into Bookings VALUES (19, 5,'swaawilliam', 'cancelled', 'host', 250, '2024-02-23', '2024-02-24');
+
+INSERT into Bookings VALUES (20, 5,'bigcat', 'completed', NULL, 250, '2021-03-23', '2021-03-24');
+INSERT into Bookings VALUES (21, 5,'bigcat', 'completed', NULL, 250, '2021-05-13', '2021-05-15');
+
+INSERT into Bookings VALUES (22, 8,'hummusking', 'booked', NULL, 275, '2023-11-11', '2023-11-15');
+INSERT into Bookings VALUES (23, 8,'hummusking', 'cancelled', 'host', 275, '2023-11-11', '2023-11-15');
+INSERT into Bookings VALUES (24, 8,'swaawilliam', 'cancelled', 'host', 275, '2023-12-13', '2023-12-15');
+INSERT into Bookings VALUES (25, 8,'swaawilliam', 'cancelled', 'host', 275, '2023-12-16', '2023-12-17');
+INSERT into Bookings VALUES (26, 8,'swaawilliam', 'cancelled', 'host', 275, '2023-12-22', '2023-12-24');
+
+INSERT into Bookings VALUES (27, 2,'swaawilliam', 'unavailable', NULL, NULL, '2023-11-01', '2023-11-30');
+
+
+
+
+INSERT into Reviews VALUES (default, 'swaawilliam', 'avidrenter', NULL, 'Good guy.  Left the place clean and did all the dishes as well.  Overall great renter', NULL, NULL, 4);
+INSERT into Reviews VALUES (default, 'avidrenter', 'swaawilliam', 1, 'Good host, house was clean and tidy.  Had large selection of dishes.  I think I was a great renter here.', 5, 5, NULL);
+INSERT into Reviews VALUES (default, 'superhostman', 'bigcat', NULL, 'Horrendous renter.  I wish he never came to my house.  Left the place very dirty, there were a lot of dirty dishes and stains on the walls.', NULL, NULL, 1);
+INSERT into Reviews VALUES (default, 'bigcat', 'superhostman', 5, 'Horrible house.  It was already dirty before I came.  All the dishes were dirty and the walls were stained.  Never renting from them again!', 1, 1, NULL);
+
+
+
+
+INSERT into Amenities VALUES (1, 'Wifi');
+INSERT into Amenities VALUES (2, 'Kitchen');
+INSERT into Amenities VALUES (3, 'Washer');
+INSERT into Amenities VALUES (4, 'Dryer');
+INSERT into Amenities VALUES (5, 'Air conditioning');
+INSERT into Amenities VALUES (6, 'Heating');
+INSERT into Amenities VALUES (7, 'Dedicated workspace');
+INSERT into Amenities VALUES (8, 'TV');
+INSERT into Amenities VALUES (9, 'Hair dryer');
+INSERT into Amenities VALUES (10, 'Iron');
+INSERT into Amenities VALUES (11, 'Pool');
+INSERT into Amenities VALUES (12, 'Hot tub');
+INSERT into Amenities VALUES (13, 'Free parking');
+INSERT into Amenities VALUES (14, 'EV charger');
+INSERT into Amenities VALUES (15, 'Crib');
+INSERT into Amenities VALUES (16, 'Gym');
+INSERT into Amenities VALUES (17, 'BBQ grill');
+INSERT into Amenities VALUES (18, 'Breakfast');
+INSERT into Amenities VALUES (19, 'Indoor fireplace');
+INSERT into Amenities VALUES (20, 'Smoking allowed');
+INSERT into Amenities VALUES (21, 'Beachfront');
+INSERT into Amenities VALUES (22, 'Waterfront');
+INSERT into Amenities VALUES (23, 'Smoke alarm');
+INSERT into Amenities VALUES (24, 'Carbon monoxide alarm');

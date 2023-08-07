@@ -2144,7 +2144,6 @@ public class Main {
         return temp;
     }
 
-
     // Helper function for printing back to main menu message
     private static void printBackToMainMenu() {
         System.out.println("Bringing back to main menu...\n\n");
