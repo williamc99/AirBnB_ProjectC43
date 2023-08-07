@@ -53,6 +53,7 @@ public class Main {
                 System.out.println("8. Delete a user");
                 System.out.println("9. User History");
                 System.out.println("10. Reports");
+                System.out.println("11. Sync database with today's date");
                 System.out.println("0. Exit the application\n");
 
                 // Get user input
@@ -61,7 +62,7 @@ public class Main {
                 scanner.nextLine();
 
                 // Make sure that the user input is an integer and is within the range of the menu
-                if (choice < 0 || choice > 10) {
+                if (choice < 0 || choice > 11) {
                     System.out.println("Invalid choice. Please try again.");
                     continue;
                 }
@@ -78,6 +79,7 @@ public class Main {
                     case 8 -> handleOption8(scanner, conn);
                     case 9 -> handleOption9(scanner, conn);
                     case 10 -> handleOption10(scanner, conn);
+                    case 11 -> handleOption11(scanner, conn);
                     case 0 -> {
                         System.out.println("Exiting the application...");
                         exit = true;
@@ -1797,7 +1799,7 @@ public class Main {
 
                 System.out.println("\n");
             }
-            
+
             rs.close();
             stmt.close();
         }
@@ -1806,6 +1808,33 @@ public class Main {
         printBackToMainMenu();
     }
 
+    // Sync database with today's date
+    private static void handleOption11(Scanner scanner, Connection conn) throws SQLException {
+        // Get today's date in LocalDate
+        LocalDate today = LocalDate.now();
+
+        // Get all the bookings that are booked and endDate is before today's date
+        PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Bookings WHERE status = 'booked' AND endDate < ?;");
+        stmt.setDate(1, Date.valueOf(today));
+        ResultSet rs = stmt.executeQuery();
+
+        // Update the status of the bookings to completed
+        stmt = conn.prepareStatement("UPDATE Bookings SET status = 'completed' WHERE bookingID = ?;");
+        while (rs.next()){
+            stmt.setInt(1, rs.getInt("bookingID"));
+            stmt.execute();
+        }
+        System.out.println("The database has been successfully synced with today's date.");
+
+        rs.close();
+        stmt.close();
+        printBackToMainMenu();
+    }
+
+
+
+
+    //-----------------------------------------HELPER FUNCTIONS-----------------------------------------//
 
     private static boolean checkUsernameExists(String username, Connection conn) throws SQLException {
         // Check in database to see if username exists

@@ -1,12 +1,3 @@
-// Essentials:
-Wifi, Kitchen, Washer, Dryer, Air conditioning, Heating, Dedicated workspace, TV, Hair dryer, Iron
-// Features
-Pool,Hot tub,Free parking,EV charger,Crib,Gym,BBQ grill,Breakfast,Indoor fireplace,Smoking allowed,
-// Location
-Beachfront, Waterfront
-//Safety
-Smoke alarm, Carbon monoxide alarm
-
 INSERT into Amenities VALUES (1, 'Wifi');
 INSERT into Amenities VALUES (2, 'Kitchen');
 INSERT into Amenities VALUES (3, 'Washer');
