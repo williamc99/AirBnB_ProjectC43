@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="stanford-corenlp-4.5">
+    <CLASSES>
+      <root url="file://D:/Downloads - data drive/School Document Downloads/Year 3/Summer Semester/CSCC43 (Intro to Databases)/MySQL Testing/stanford-corenlp-4.5.4" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="file://D:/Downloads - data drive/School Document Downloads/Year 3/Summer Semester/CSCC43 (Intro to Databases)/MySQL Testing/stanford-corenlp-4.5.4" />
+    </SOURCES>
+    <jarDirectory url="file://D:/Downloads - data drive/School Document Downloads/Year 3/Summer Semester/CSCC43 (Intro to Databases)/MySQL Testing/stanford-corenlp-4.5.4" recursive="false" />
+    <jarDirectory url="file://D:/Downloads - data drive/School Document Downloads/Year 3/Summer Semester/CSCC43 (Intro to Databases)/MySQL Testing/stanford-corenlp-4.5.4" recursive="false" type="SOURCES" />
+  </library>
+</component>

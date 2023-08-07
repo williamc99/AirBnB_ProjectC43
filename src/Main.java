@@ -5,6 +5,14 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import edu.stanford.nlp.ling.CoreAnnotations;
+import edu.stanford.nlp.ling.CoreLabel;
+import edu.stanford.nlp.pipeline.Annotation;
+import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.util.CoreMap;
+import edu.stanford.nlp.util.logging.RedwoodConfiguration;
+
+
 public class Main {
 
     private static final String dbClassName = "com.mysql.cj.jdbc.Driver";
@@ -1435,7 +1443,7 @@ public class Main {
     }
 
     // Reports
-    private static void handleOption10(Scanner scanner, Connection conn) {
+    private static void handleOption10(Scanner scanner, Connection conn) throws SQLException {
         System.out.println("\n\n");
 
         // Ask the user what type of report they want to run
@@ -1446,7 +1454,353 @@ public class Main {
         System.out.println("4. Identify possible commercial hosts");
         System.out.println("5. Rank renters by number of bookings in specific time period");
         System.out.println("6. Hosters and renters with largest number of cancellations within a year");
-        System.out.println("7. Most popular noun phrases per listing");
+        System.out.println("7. Most popular noun phrases per listing\n");
+        System.out.println("Please enter your choice: ");
+        int choice = scanner.nextInt();
+        scanner.nextLine();
+
+        // Make sure that the user input is an integer and is within the range of the menu
+        if (choice < 1 || choice > 7) {
+            System.out.println("Invalid choice. Please try again.");
+            printBackToMainMenu();
+            return;
+        }
+
+        // If 1, total number of bookings in date range by city/postal code
+        if (choice == 1) {
+            System.out.println("Please enter the start date (YYYY-MM-DD): ");
+            String startDate = scanner.nextLine();
+            System.out.println("Please enter the end date (YYYY-MM-DD): ");
+            String endDate = scanner.nextLine();
+
+            System.out.println("Please enter a city: ");
+            String city = scanner.nextLine();
+            System.out.println("Please the first three letters of a postal code: ");
+            String postalCode = scanner.nextLine();
+
+            // Get the total number of bookings in the date range by city
+            System.out.println("\n");
+            PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) AS total FROM Bookings WHERE startDate >= ? " +
+                    "AND endDate <= ? AND (status = 'booked' OR status = 'completed') AND listingID IN (SELECT listingID FROM Listings WHERE city = ?);");
+            stmt.setDate(1, Date.valueOf(startDate));
+            stmt.setDate(2, Date.valueOf(endDate));
+            stmt.setString(3, city);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no bookings found for the city '" + city + "' in the date range '" + startDate + "' to '" + endDate + "'");
+            }else{
+                System.out.println("The total number of bookings for the city '" + city + "' in the date range '" + startDate + "' to '" + endDate + "' is: " + rs.getInt("total"));
+            }
+
+            // Get the total number of bookings in the date range by postal code
+            stmt = conn.prepareStatement("SELECT COUNT(*) AS total FROM Bookings WHERE startDate >= ? AND " +
+                    "endDate <= ? AND (status = 'booked' OR status = 'completed') AND listingID IN (SELECT listingID FROM Listings WHERE city = ? AND postalCode LIKE ?);");
+            stmt.setDate(1, Date.valueOf(startDate));
+            stmt.setDate(2, Date.valueOf(endDate));
+            stmt.setString(3, city);
+            stmt.setString(4, postalCode + "%");
+            rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no bookings found for the city '" + city + "' with postal code '" + postalCode + "' in the date range '" + startDate + "' to '" + endDate + "'");
+            }else{
+                System.out.println("The total number of bookings for the city '" + city + "' with postal code '" + postalCode + "' in the date range '" + startDate + "' to '" + endDate + "' is: " + rs.getInt("total"));
+            }
+        }
+        // If 2, total number of listings per country/city/postal code
+        else if (choice == 2){
+
+            System.out.println("Please enter a country: ");
+            String country = scanner.nextLine();
+            System.out.println("Please enter a city: ");
+            String city = scanner.nextLine();
+            System.out.println("Please the first three letters of a postal code: ");
+            String postalCode = scanner.nextLine();
+
+            // Get the total number of listings per country
+            System.out.println("\n");
+            PreparedStatement stmt = conn.prepareStatement("SELECT COUNT(*) AS total FROM Listings WHERE country = ?;");
+            stmt.setString(1, country);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no listings found for the country '" + country + "'");
+            }else{
+                System.out.println("The total number of listings for the country '" + country + "' is: " + rs.getInt("total"));
+            }
+
+            // Get the total number of listings per city
+            stmt = conn.prepareStatement("SELECT COUNT(*) AS total FROM Listings WHERE country = ? AND city = ?;");
+            stmt.setString(1, country);
+            stmt.setString(2, city);
+            rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no listings found for the city '" + city + "'");
+            }else{
+                System.out.println("The total number of listings for '" + city + ", " + country + "' is: " + rs.getInt("total"));
+            }
+
+            // Get the total number of listings per postal code
+            stmt = conn.prepareStatement("SELECT COUNT(*) AS total FROM Listings WHERE country = ? AND city = ? AND postalCode LIKE ?;");
+            stmt.setString(1, country);
+            stmt.setString(2, city);
+            stmt.setString(3, postalCode + "%");
+            rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no listings found for the city '" + city + "' with postal code '" + postalCode + "'");
+            }else{
+                System.out.println("The total number of listings for '" + city + ", " + country + "' with postal code '" + postalCode + "' is: " + rs.getInt("total"));
+            }
+        }
+        // If 3, rank hosts by total number of listings per country/city
+        else if (choice == 3){
+            System.out.println("Please enter a country: ");
+            String country = scanner.nextLine();
+            System.out.println("Please enter a city: ");
+            String city = scanner.nextLine();
+
+            // Get the total number of listings per country
+            System.out.println("\n");
+            PreparedStatement stmt = conn.prepareStatement("SELECT hostID, COUNT(*) AS total FROM Listings WHERE country = ? GROUP BY hostID ORDER BY total DESC;");
+            stmt.setString(1, country);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no listings found for the country '" + country + "'");
+            }else{
+                System.out.println("Here are the hosts ranked by total number of listings for the country '" + country + "': \n");
+                do {
+                    System.out.println("Host ID: " + rs.getString("hostID"));
+                    System.out.println("Total number of listings: " + rs.getInt("total"));
+                    System.out.print("\n");
+                } while (rs.next());
+                System.out.print("\n");
+            }
+
+            // Get the total number of listings per city
+            stmt = conn.prepareStatement("SELECT hostID, COUNT(*) AS total FROM Listings WHERE country = ? AND city = ? GROUP BY hostID ORDER BY total DESC;");
+            stmt.setString(1, country);
+            stmt.setString(2, city);
+            rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no listings found for the city '" + city + "'");
+            }else{
+                System.out.println("Here are the hosts ranked by total number of listings for '" + city + ", " + country + "': \n");
+                do {
+                    System.out.println("Host ID: " + rs.getString("hostID"));
+                    System.out.println("Total number of listings: " + rs.getInt("total"));
+                    System.out.print("\n");
+                } while (rs.next());
+            }
+            System.out.println("\n");
+        }
+        // If 4, identify possible commercial hosts
+        if (choice == 4){
+            // If hosts have more than 10% of the city and country's listings, then they are a possible commercial host
+            System.out.println("Please enter a country: ");
+            String country = scanner.nextLine();
+            System.out.println("Please enter a city: ");
+            String city = scanner.nextLine();
+
+            // Get the total number of listings per city/country
+            System.out.println("\n");
+            String sql = "SELECT hostID, COUNT(*) AS total FROM LISTINGS "
+                    + "WHERE country = ? AND city = ? "
+                    + "GROUP BY hostID "
+                    + "HAVING COUNT(*) > (0.10 * (SELECT COUNT(*) FROM Listings WHERE country = ? AND city = ?)) "
+                    + "ORDER BY total DESC;";
+
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, country);
+            stmt.setString(2, city);
+            stmt.setString(3, country);
+            stmt.setString(4, city);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no listings found for '" + city + ", " + country + "'");
+            }else{
+                System.out.println("Here are the possible commercial hosts for '" + city + ", " + country + "': \n");
+                do {
+                    System.out.println("Host ID: " + rs.getString("hostID"));
+                    System.out.println("Total number of listings: " + rs.getInt("total"));
+                    System.out.print("\n");
+                } while (rs.next());
+            }
+            rs.close();
+            stmt.close();
+            System.out.println("\n");
+        }
+        // If 5, rank renters by number of bookings in time period and by city
+        else if (choice == 5){
+            System.out.println("Please enter the start date (YYYY-MM-DD): ");
+            String startDate = scanner.nextLine();
+            System.out.println("Please enter the end date (YYYY-MM-DD): ");
+            String endDate = scanner.nextLine();
+            System.out.println("Please enter a city: ");
+            String city = scanner.nextLine();
+
+            // Rank renters by number of bookings in time period
+            System.out.println("\n");
+            PreparedStatement stmt = conn.prepareStatement("SELECT userID, COUNT(*) AS total FROM Bookings WHERE startDate >= ? " +
+                    "AND endDate <= ? AND (status = 'booked' OR status = 'completed') GROUP BY userID ORDER BY total DESC;");
+            stmt.setDate(1, Date.valueOf(startDate));
+            stmt.setDate(2, Date.valueOf(endDate));
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no renters found in the date range '" + startDate + "' to '" + endDate + "'");
+            }else{
+                System.out.println("Renters ranked by total number of bookings in the date range '" + startDate + "' to '" + endDate + "': \n");
+                do {
+                    System.out.println("Renter ID: " + rs.getString("userID"));
+                    System.out.println("Total number of bookings: " + rs.getInt("total"));
+                    System.out.print("\n");
+                } while (rs.next());
+                System.out.print("\n");
+            }
+
+            // Rank renters by number of bookings in time period and by city (renters must have at least two bookings)
+            stmt = conn.prepareStatement("SELECT userID, COUNT(*) AS total FROM Bookings WHERE startDate >= ? " +
+                    "AND endDate <= ? AND (status = 'booked' OR status = 'completed') AND listingID IN (SELECT listingID FROM Listings WHERE city = ?) " +
+                    "GROUP BY userID HAVING COUNT(*) >= 2 ORDER BY total DESC;");
+            stmt.setDate(1, Date.valueOf(startDate));
+            stmt.setDate(2, Date.valueOf(endDate));
+            stmt.setString(3, city);
+            rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no renters found for the city '" + city + "' in the date range '" + startDate + "' to '" + endDate + "'");
+            }else{
+                System.out.println("Renters ranked by total number of bookings in the date range '" + startDate + "' to '" + endDate + "' for '" + city + "': \n");
+                do {
+                    System.out.println("Renter ID: " + rs.getString("userID"));
+                    System.out.println("Total number of bookings: " + rs.getInt("total"));
+                    System.out.print("\n");
+                } while (rs.next());
+            }
+            System.out.println("\n");
+        }
+        // If 6, show the hosts and renters with the most cancellations within a year
+        else if (choice == 6){
+            System.out.println("Please enter a year (YYYY): ");
+            String year = scanner.nextLine();
+
+            // Get the hosts with the most cancellations within a year
+            System.out.println("\n");
+            String sql = "SELECT hostID, COUNT(*) AS total "
+                    +    "FROM Listings JOIN Bookings ON Listings.listingID = Bookings.listingID "
+                    +    "WHERE status = 'cancelled' AND statusReason = 'host' AND YEAR(startDate) = ? "
+                    +    "GROUP BY hostID "
+                    +    "ORDER BY total DESC;";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            stmt.setString(1, year);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no hosts found with cancellations in the year '" + year + "'");
+            }else{
+                System.out.println("The hosts with the most cancellations in the year '" + year + "': \n");
+                do {
+                    System.out.println("Host ID: " + rs.getString("hostID"));
+                    System.out.println("Total number of cancellations: " + rs.getInt("total"));
+                    System.out.print("\n");
+                } while (rs.next());
+                System.out.print("\n");
+            }
+
+            // Get the renters with the most cancellations within a year
+            sql = "SELECT userID, COUNT(*) AS total "
+                    + "FROM Bookings "
+                    + "WHERE status = 'cancelled' AND statusReason = 'renter' AND YEAR(startDate) = ? "
+                    + "GROUP BY userID "
+                    + "ORDER BY total DESC;";
+            stmt = conn.prepareStatement(sql);
+            stmt.setString(1, year);
+            rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no renters found with cancellations in the year '" + year + "'");
+            }else{
+                System.out.println("The renters with the most cancellations in the year '" + year + "': \n");
+                do {
+                    System.out.println("Renter ID: " + rs.getString("userID"));
+                    System.out.println("Total number of cancellations: " + rs.getInt("total"));
+                    System.out.print("\n");
+                } while (rs.next());
+                System.out.print("\n");
+            }
+            rs.close();
+            stmt.close();
+        }
+        // If 7, report the most used noun phrases in comments of a listing
+        else if (choice == 7){
+            System.out.println("Please enter a listing ID: ");
+            int listingID = scanner.nextInt();
+            scanner.nextLine();
+
+            // Check if the listing exists and that it has reviews with comments
+            PreparedStatement stmt = conn.prepareStatement("SELECT * FROM Reviews WHERE listingID = ?;");
+            stmt.setInt(1, listingID);
+            ResultSet rs = stmt.executeQuery();
+
+            if (!rs.next()){
+                System.out.println("There were no reviews found for the listing with ID: " + listingID);
+            }
+            else{
+                // Go through all the reviews for the specified listing and record the most used nouns from the comments
+                System.out.println("Processing, please wait...\n");
+                HashMap<String, Integer> nounCount = new HashMap<String, Integer>();
+                do {
+                    // Get the comment from the review
+                    String comment = rs.getString("comment");
+
+                    // Use the Stanford CoreNLP library to get the nouns from the comment
+                    Properties props = new Properties();
+                    props.setProperty("annotators", "tokenize,ssplit,pos,lemma,ner,parse,dcoref");
+                    RedwoodConfiguration.current().clear().apply();
+                    StanfordCoreNLP pipeline = new StanfordCoreNLP(props);
+                    Annotation document = new Annotation(comment);
+                    pipeline.annotate(document);
+
+                    // Get the nouns from the comment
+                    List<CoreMap> sentences = document.get(CoreAnnotations.SentencesAnnotation.class);
+                    for (CoreMap sentence : sentences) {
+                        for (CoreLabel token : sentence.get(CoreAnnotations.TokensAnnotation.class)) {
+                            String pos = token.get(CoreAnnotations.PartOfSpeechAnnotation.class);
+                            if (pos.startsWith("NN")) {
+                                String lemma = token.get(CoreAnnotations.LemmaAnnotation.class);
+                                // If the noun is already in the container, increment the count
+                                if (nounCount.containsKey(lemma)) {
+                                    nounCount.put(lemma, nounCount.get(lemma) + 1);
+                                }
+                                // Else, add the noun to the container
+                                else {
+                                    nounCount.put(lemma, 1);
+                                }
+                            }
+                        }
+                    }
+                } while (rs.next());
+
+                // Sort the nouns by count
+                HashMap<String, Integer> outputMap = sortByValue(nounCount);
+
+                // Print results
+                for (Map.Entry<String, Integer> noun : outputMap.entrySet()) {
+                    System.out.println("Noun: " + noun.getKey() + " Count: " + noun.getValue());
+                }
+
+                System.out.println("\n");
+            }
+            
+            rs.close();
+            stmt.close();
+        }
 
 
         printBackToMainMenu();
@@ -1738,10 +2092,33 @@ public class Main {
         }
     }
 
+    // HashMap sort by value function courtesy of https://www.geeksforgeeks.org/sorting-a-hashmap-according-to-values/
+    public static HashMap<String, Integer> sortByValue(HashMap<String, Integer> hm)
+    {
+        // Create a list from elements of HashMap
+        List<Map.Entry<String, Integer> > list =
+                new LinkedList<Map.Entry<String, Integer> >(hm.entrySet());
+
+        // Sort the list
+        list.sort(new Comparator<Map.Entry<String, Integer>>() {
+            public int compare(Map.Entry<String, Integer> o1,
+                               Map.Entry<String, Integer> o2) {
+                return (o2.getValue()).compareTo(o1.getValue());
+            }
+        });
+
+        // Put data from sorted list to hashmap
+        HashMap<String, Integer> temp = new LinkedHashMap<String, Integer>();
+        for (Map.Entry<String, Integer> aa : list) {
+            temp.put(aa.getKey(), aa.getValue());
+        }
+        return temp;
+    }
+
 
     // Helper function for printing back to main menu message
     private static void printBackToMainMenu() {
-        System.out.println("Bringing back to main menu...\n\n\n");
+        System.out.println("Bringing back to main menu...\n\n");
         System.out.println("------------------------------------------------------------");
     }
 }
