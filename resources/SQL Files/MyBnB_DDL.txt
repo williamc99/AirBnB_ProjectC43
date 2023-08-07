@@ -25,7 +25,9 @@ CREATE TABLE Listings(
     latitude decimal(8, 6) NOT NULL,
     amenities varchar(300),
     PRIMARY KEY (listingID),
-    FOREIGN KEY (hostID) REFERENCES Users(username) ON DELETE CASCADE
+    FOREIGN KEY (hostID) REFERENCES Users(username) ON DELETE CASCADE,
+    CHECK (listingType IN ('House', 'Apartment', 'Guesthouse', 'Hotel')),
+    CHECK (price >= 0)
 );
 
 CREATE TABLE Bookings(
@@ -39,7 +41,10 @@ CREATE TABLE Bookings(
     endDate DATE NOT NULL,
     PRIMARY KEY (bookingID),
     FOREIGN KEY (listingID) REFERENCES Listings(listingID) ON DELETE CASCADE,
-    FOREIGN KEY (userID) REFERENCES Users(username) ON DELETE CASCADE
+    FOREIGN KEY (userID) REFERENCES Users(username) ON DELETE CASCADE,
+    CHECK (status IN ('completed', 'cancelled', 'unavailable', 'booked')),
+    CHECK (statusReason IN ('host', 'renter')),
+    CHECK (price >= 0)
 );
 
 CREATE TABLE Reviews(
@@ -54,7 +59,10 @@ CREATE TABLE Reviews(
     PRIMARY KEY (reviewID),
     FOREIGN KEY (reviewerID) REFERENCES Users(username) ON DELETE CASCADE,
     FOREIGN KEY (revieweeID) REFERENCES Users(username) ON DELETE CASCADE,
-    FOREIGN KEY (listingID) REFERENCES Listings(listingID) ON DELETE CASCADE
+    FOREIGN KEY (listingID) REFERENCES Listings(listingID) ON DELETE CASCADE,
+    CHECK (hostRating >= 1 AND hostRating <= 5),
+    CHECK (listingRating >= 1 AND listingRating <= 5),
+    CHECK (renterRating >= 1 AND renterRating <= 5)
 );
 
 CREATE TABLE Amenities(
