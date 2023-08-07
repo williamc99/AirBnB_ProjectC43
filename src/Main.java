@@ -601,7 +601,7 @@ public class Main {
 
         if (rs.next()) {
             userType = "renter";
-            System.out.println("You are a renter of the booking with ID: " + booking.bookingID);
+            System.out.println("You are the renter of the booking with ID: " + booking.bookingID);
         }
 
         if (userType.equals("")) {
@@ -1891,7 +1891,7 @@ public class Main {
                 amenities = amenities.concat(String.valueOf(amenityID) + ",");
                 System.out.println("Amenity: " + amenity + " added successfully!");
             } else {
-                System.out.println("Amenity: " + amenity + "does not exist. Please try again.");
+                System.out.println("Amenity: " + amenity + " does not exist. Please try again.");
                 continue;
             }
 
