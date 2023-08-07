@@ -63,6 +63,7 @@ INSERT into Reviews VALUES (default, 'swaawilliam', 'avidrenter', NULL, 'Good gu
 INSERT into Reviews VALUES (default, 'avidrenter', 'swaawilliam', 1, 'Good host, house was clean and tidy.  Had large selection of dishes.  I think I was a great renter here.', 5, 5, NULL);
 INSERT into Reviews VALUES (default, 'superhostman', 'bigcat', NULL, 'Horrendous renter.  I wish he never came to my house.  Left the place very dirty, there were a lot of dirty dishes and stains on the walls.', NULL, NULL, 1);
 INSERT into Reviews VALUES (default, 'bigcat', 'superhostman', 5, 'Horrible house.  It was already dirty before I came.  All the dishes were dirty and the walls were stained.  Never renting from them again!', 1, 1, NULL);
+INSERT into Reviews VALUES (default, 'bigcat', 'swaawilliam', 1, 'Nice host, house was pretty clean.  He had a large selection of dishes and even a bidet!  Great guy, solid host.', 5, 5, NULL);
 
 
 
