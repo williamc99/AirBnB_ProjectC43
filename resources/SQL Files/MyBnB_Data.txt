@@ -26,8 +26,8 @@ INSERT into Bookings VALUES (1, 1,'avidrenter', 'booked', NULL, 400, '2023-09-09
 INSERT into Bookings VALUES (2, 1,'avidrenter', 'completed', NULL, 400, '2022-09-09', '2022-09-15');
 INSERT into Bookings VALUES (3, 1,'bigcat', 'booked', NULL, 400, '2023-10-09', '2023-10-15');
 INSERT into Bookings VALUES (4, 1,'hummusking', 'cancelled', 'renter', 400, '2023-09-09', '2023-09-15');
-INSERT into Bookings VALUES (5, 1,'hummusking', 'cancelled', 'renter', 400, '2022-05-09', '2022-05-15');
-INSERT into Bookings VALUES (6, 1,'hummusking', 'cancelled', 'renter', 400, '2022-09-09', '2023-09-15');
+INSERT into Bookings VALUES (5, 1,'hummusking', 'cancelled', 'renter', 400, '2022-02-02', '2022-02-04');
+INSERT into Bookings VALUES (6, 1,'hummusking', 'cancelled', 'renter', 400, '2022-03-12', '2023-03-17');
 INSERT into Bookings VALUES (7, 1,'hummusking', 'cancelled', 'renter', 400, '2023-10-09', '2023-10-15');
 INSERT into Bookings VALUES (8, 1,'hummusking', 'cancelled', 'renter', 400, '2023-09-09', '2023-09-15');
 INSERT into Bookings VALUES (9, 1,'swaawilliam', 'unavailable', NULL, NULL, '2023-12-02', '2023-12-05');
@@ -54,6 +54,7 @@ INSERT into Bookings VALUES (25, 8,'swaawilliam', 'cancelled', 'host', 275, '202
 INSERT into Bookings VALUES (26, 8,'swaawilliam', 'cancelled', 'host', 275, '2023-12-22', '2023-12-24');
 
 INSERT into Bookings VALUES (27, 2,'swaawilliam', 'unavailable', NULL, NULL, '2023-11-01', '2023-11-30');
+INSERT into Bookings VALUES (28, 1,'bigcat', 'completed', NULL, 400, '2022-06-03', '2023-06-05');
 
 
 

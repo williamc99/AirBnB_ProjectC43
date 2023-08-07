@@ -1193,6 +1193,7 @@ public class Main {
                 return;
             }
 
+            System.out.println("\n");
             System.out.println("Here are all the reviews you have written: ");
             System.out.println("--------------------------------------------------");
             do {
@@ -1677,7 +1678,7 @@ public class Main {
             rs = stmt.executeQuery();
 
             if (!rs.next()){
-                System.out.println("There were no renters found for the city '" + city + "' in the date range '" + startDate + "' to '" + endDate + "'");
+                System.out.println("There were no renters found for the city '" + city + "' in the date range '" + startDate + "' to '" + endDate + "' that have at least two bookings.");
             }else{
                 System.out.println("Renters ranked by total number of bookings in the date range '" + startDate + "' to '" + endDate + "' for '" + city + "': \n");
                 do {
