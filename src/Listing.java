@@ -52,7 +52,6 @@ public class Listing {
     }
 
     public float estimatePrice() {
-        // TODO: Implement and refine the price suggesting algorithm
         // Estimate the price per night by taking into account different factors
 
         float price = switch (this.listingType) {

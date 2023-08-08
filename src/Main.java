@@ -18,8 +18,6 @@ public class Main {
     private static final String dbClassName = "com.mysql.cj.jdbc.Driver";
     private static final String CONNECTION = "jdbc:mysql://127.0.0.1/projectdb";
 
-    //TODO: Add a trigger event to SQL to update bookings status to "completed" when the current date is past the end date
-
     public static void main(String[] args) throws ClassNotFoundException {
         // Register JDBC driver
         Class.forName(dbClassName);
