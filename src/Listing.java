@@ -54,7 +54,7 @@ public class Listing {
     public float estimatePrice() {
         // Estimate the price per night by taking into account different factors
 
-        float price = switch (this.listingType) {
+        float tempPrice = switch (this.listingType) {
             case "House" -> 300;
             case "Apartment" -> 200;
             case "Guesthouse" -> 250;
@@ -62,11 +62,23 @@ public class Listing {
             default -> 0;
         };
 
-        // Get the number of amenities
-        int numAmenities = this.amenities.split(",").length;
+        float price = tempPrice;
 
-        // Add 2% for each amenity
-        price += price * (numAmenities * 0.02);
+        String[] amList = this.amenities.split(",");
+        for (String amenity: amList){
+            switch (amenity){
+                // Most expensive/most important
+                // Wifi, AC, Heating, TV, Pool, Hot Tub, Gym, Indoor Fireplace, Beachfront, Waterfront
+                case "1", "5", "6", "8", "11", "12", "16", "19", "21", "22" -> price += (tempPrice * 0.04);
+                // Essential amenities
+                // Kitchen, Washer, Dryer, Dedicated Workspace, Crib, BBQ Grill, Breakfast
+                case "2", "3", "4", "7", "15", "17", "18" -> price += (tempPrice * 0.03);
+                // Other amenities
+                // Hair Dryer, Iron, Free parking, EV charger, Smoking allowed, Smoke alarm, carbon monoxide alarm
+                case "9", "10", "13", "14", "20", "23", "24" -> price += (tempPrice * 0.02);
+                default -> price += 0;
+            }
+        }
 
         return price;
     }
